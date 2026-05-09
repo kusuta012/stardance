@@ -176,7 +176,8 @@ class ShopController < ApplicationController
 
     begin
       ActiveRecord::Base.transaction do
-        current_user.lock!
+        current_user.lock! # Lock user to prevent race-condition from overspending on user balance
+        @shop_item.lock! if @shop_item.limited? # Lock item if limited stock to prevent overselling
 
         if @mission_submission.nil?
           user_balance = current_user.balance
