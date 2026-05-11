@@ -32,6 +32,7 @@
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
     <meta name="turbo-prefetch" content="false">
+    <% if @active_nav_slug.present? %><meta name="active-nav-slug" content="<%= @active_nav_slug %>"><% end %>
 
     <%= preload_link_tag image_path("landing/space/moon-opp.png"), as: "image", fetchpriority: "high" if controller_name == "landing" %>
     <%= preload_link_tag asset_path("Roboto.ttf"), as: "font", type: "font/ttf", crossorigin: true %>
@@ -75,7 +76,7 @@
       </div>
     <% end %>
     <% if current_user.present? && !current_user.banned? && !@hide_sidebar %>
-      <%= render SidebarComponent.new(user: current_user) %>
+      <%= render SidebarComponent.new(user: current_user, active_slug_override: @active_nav_slug) %>
       <%= render CommandPaletteComponent.new(current_user: current_user) %>
     <% end %>
     <%= render "shared/flash" %>

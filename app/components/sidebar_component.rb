@@ -7,8 +7,9 @@ class SidebarComponent < ViewComponent::Base
 
   attr_reader :user
 
-  def initialize(user:)
+  def initialize(user:, active_slug_override: nil)
     @user = user
+    @active_slug_override = active_slug_override.presence
   end
 
   # Ordered list of nav items rendered in the sidebar. Each entry:
@@ -56,6 +57,8 @@ class SidebarComponent < ViewComponent::Base
   # over once the page is interactive and keeps the highlight in sync as the
   # user navigates Turbo-style).
   def active?(item)
+    return item[:slug] == @active_slug_override if @active_slug_override
+
     candidate_path = item[:path]
     return false if candidate_path == "#"
 

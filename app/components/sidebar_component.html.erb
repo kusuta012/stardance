@@ -38,6 +38,7 @@
                     class="<%= link_classes %> sidebar__nav-link--locked"
                     data-controller="locked-tab"
                     data-locked-tab-message-value="<%= item[:locked_message] %>"
+                    data-slug="<%= item[:slug] %>"
                     aria-disabled="true"
                     aria-haspopup="dialog"
                     aria-label="<%= item[:label] %> (locked) — click for details">
@@ -48,12 +49,12 @@
               </span>
             </button>
           <% elsif item[:path] == "#" %>
-            <span class="<%= link_classes %> sidebar__nav-link--inert" aria-disabled="true">
+            <span class="<%= link_classes %> sidebar__nav-link--inert" data-slug="<%= item[:slug] %>" aria-disabled="true">
               <%= icon_block %>
               <span class="sidebar__nav-label"><%= item[:label] %></span>
             </span>
           <% else %>
-            <%= link_to item[:path], class: link_classes, aria: (active?(item) ? { current: "page" } : {}), data: { turbo: true, active_prefix: item[:active_prefix] }.compact do %>
+            <%= link_to item[:path], class: link_classes, aria: (active?(item) ? { current: "page" } : {}), data: { turbo: true, active_prefix: item[:active_prefix], slug: item[:slug] }.compact do %>
               <%= icon_block %>
               <span class="sidebar__nav-label"><%= item[:label] %></span>
             <% end %>
