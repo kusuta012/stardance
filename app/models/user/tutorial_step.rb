@@ -19,52 +19,6 @@ class User
     end
 
     self::ALL = [
-      new(:first_login, "First login", "Log into the platform for the first time!", "user", "/"),
-      new(slug: :create_project,
-          name: "Create your first project",
-          description: "What are you building?",
-          icon: "fork_spoon_fill",
-          link: ->(_) { new_project_path }),
-      new(slug: :post_devlog,
-          name: "Post a devlog",
-          description: "Dev your log!",
-          icon: "edit",
-          link: ->(_) { new_project_devlog_path(current_user.projects.first) },
-          deps: [
-            Dep[:create_project, "You need to create a project first!"]
-          ]),
-      new(slug: :identity_verified,
-        name: "Confirm your age",
-        description: "You must be a teenager to participate in Stardance",
-        icon: "user",
-        link: ->(_) { HCAService.verify_portal_url(return_to: home_url) }),
-      new(slug: :setup_hackatime,
-          name: "Setup Hackatime",
-          description: "Start tracking your time",
-          icon: "time",
-          link: "/auth/hackatime",
-          verb: :post),
-      new(slug: :setup_slack,
-          name: "Join Slack",
-          description: "Post in #flavortown-introduction after becoming a full member!",
-          icon: "slack",
-          link: ->(_) { "https://hackclub.slack.com/app_redirect?channel=USLACKBOT" }),
-      new(slug: :free_stickers,
-          name: "Get your stickers!",
-          description: "Get your stickers!",
-          icon: "sticker",
-          link: ->(_) { shop_path },
-          deps: [
-            Dep[:setup_hackatime, "You need to setup Hackatime first!"]
-          ]),
-      new(slug: :learn_what_is_a_ship,
-          name: "Learn what's a ship",
-          description: "Watch a quick video on how to ship!",
-          icon: "ship",
-          link: "#tutorial-video-modal",
-          verb: :modal,
-          video_url: VimeoEmbedComponent.video_url(:what_is_a_ship)
-        )
     ].freeze
 
     self::SLUGGED = self::ALL.index_by(&:slug).freeze
