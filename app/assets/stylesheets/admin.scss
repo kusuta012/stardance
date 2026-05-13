@@ -905,3 +905,6 @@ dialog {
     cursor: not-allowed;
   }
 }
+
+/* Import page-specific styles */
+@import "pages/admin/ysws_reviews";

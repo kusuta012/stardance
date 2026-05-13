@@ -1,0 +1,206 @@
+// YSWS Review Queue - Space-themed styling
+.admin-ysws-reviews {
+  background: var(--color-set-1-bg);
+  color: var(--color-space-text);
+  min-height: 100vh;
+  padding: var(--space-xl);
+
+  h1 {
+    color: var(--color-brand-lilac);
+    font-size: var(--font-size-xxxl);
+    margin-bottom: var(--space-l);
+    text-shadow: 0 0 20px rgba(235, 183, 255, 0.3);
+  }
+
+  .review-queue-header {
+    background: linear-gradient(
+      135deg,
+      var(--color-set-2-bg) 0%,
+      var(--color-set-3-bg) 100%
+    );
+    border: 1px solid var(--color-brand-lilac-soft);
+    border-radius: var(--profile-radius);
+    padding: var(--space-m) var(--space-l);
+    margin-bottom: var(--space-l);
+    box-shadow: 0 4px 20px rgba(129, 255, 255, 0.1);
+
+    strong {
+      color: var(--color-brand-mint);
+      font-size: var(--font-size-l);
+    }
+  }
+
+  .review-queue-table {
+    background: var(--color-set-2-bg);
+    border: 1px solid var(--color-space-border);
+    border-radius: var(--profile-radius);
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(8, 6, 30, 0.6);
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    thead {
+      background: linear-gradient(
+        180deg,
+        var(--color-set-3-bg) 0%,
+        var(--color-set-2-bg) 100%
+      );
+      border-bottom: 2px solid var(--color-brand-blue);
+    }
+
+    th {
+      padding: var(--space-m) var(--space-l);
+      text-align: left;
+      color: var(--color-brand-blue);
+      font-weight: 600;
+      font-size: var(--font-size-s);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    tbody tr {
+      border-bottom: 1px solid var(--color-space-surface-faint);
+      transition: all 0.2s ease;
+
+      &:hover {
+        background: var(--color-space-surface-faint);
+        transform: translateX(4px);
+      }
+
+      &:last-child {
+        border-bottom: none;
+      }
+    }
+
+    td {
+      padding: var(--space-m) var(--space-l);
+      color: var(--color-space-text);
+      font-size: var(--font-size-m);
+      vertical-align: middle;
+
+      a.btn-primary {
+        background: linear-gradient(
+          135deg,
+          var(--color-brand-blue) 0%,
+          var(--color-brand-lilac) 100%
+        );
+        color: var(--color-set-1-bg);
+        padding: var(--space-xxs) var(--space-s);
+        border-radius: 999px;
+        text-decoration: none;
+        font-weight: 600;
+        font-size: var(--font-size-s);
+        display: inline-block;
+        transition: all 0.2s ease;
+        border: none;
+
+        &:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(149, 219, 255, 0.4);
+        }
+
+        &.slim {
+          padding: var(--space-xxxs) var(--space-xs);
+          font-size: var(--font-size-xs);
+        }
+      }
+
+      small {
+        color: var(--color-space-text-muted);
+        font-size: var(--font-size-xs);
+      }
+    }
+
+    // Review ID column
+    td:nth-child(1) {
+      color: var(--color-brand-mint);
+      font-weight: 700;
+      font-family: 'Courier New', monospace;
+    }
+
+    // Project Type column
+    td:nth-child(2) {
+      color: var(--color-brand-peach);
+      font-size: var(--font-size-s);
+    }
+
+    // Hours column
+    td:nth-child(5) {
+      color: var(--color-brand-yellow);
+      font-weight: 600;
+    }
+  }
+
+  .empty-state {
+    background: linear-gradient(
+      135deg,
+      var(--color-set-2-bg) 0%,
+      var(--color-space-surface-soft) 100%
+    );
+    border: 2px dashed var(--color-brand-mint-soft);
+    border-radius: var(--profile-radius);
+    padding: var(--space-xxl);
+    text-align: center;
+    color: var(--color-space-text-muted);
+    font-size: var(--font-size-l);
+
+    &::before {
+      content: "✨";
+      display: block;
+      font-size: var(--font-size-xxxxl);
+      margin-bottom: var(--space-m);
+    }
+  }
+
+  // Age badges with glow effects
+  .age-today {
+    color: var(--color-brand-mint);
+    text-shadow: 0 0 8px rgba(129, 255, 255, 0.6);
+    font-weight: 600;
+  }
+
+  .age-recent {
+    color: var(--color-brand-yellow);
+    text-shadow: 0 0 8px rgba(255, 229, 100, 0.4);
+    font-weight: 600;
+  }
+
+  .age-old {
+    color: var(--color-brand-salmon);
+    text-shadow: 0 0 8px rgba(255, 141, 157, 0.4);
+    font-weight: 700;
+  }
+
+  // View button styling
+  .btn-view {
+    background: linear-gradient(
+      135deg,
+      var(--color-brand-mint) 0%,
+      var(--color-brand-blue) 100%
+    );
+    color: var(--color-set-1-bg);
+    padding: var(--space-xs) var(--space-m);
+    border-radius: 999px;
+    text-decoration: none;
+    font-weight: 700;
+    font-size: var(--font-size-s);
+    display: inline-block;
+    transition: all 0.2s ease;
+    border: none;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    box-shadow: 0 2px 8px rgba(129, 255, 255, 0.2);
+
+    &:hover {
+      transform: translateY(-2px) scale(1.05);
+      box-shadow: 0 6px 16px rgba(129, 255, 255, 0.4);
+    }
+
+    &:active {
+      transform: translateY(0) scale(1);
+    }
+  }
+}
