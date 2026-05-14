@@ -114,7 +114,7 @@
               <div class="devlog-item">
                 <div class="devlog-main">
                   <div class="devlog-header-row">
-                    <span class="devlog-id">Devlog #<%= devlog_review.id %></span>
+                    <span class="devlog-id">Devlog #<%= devlog_review.post_devlog.id %></span>
                     <% if devlog_review.approved_minutes && devlog_review.approved_minutes > 0 %>
                       <span class="devlog-status status-approved">Approved</span>
                     <% elsif devlog_review.approved_minutes == 0 %>
@@ -122,13 +122,36 @@
                     <% end %>
                   </div>
 
-                  <p class="devlog-desc">Placeholder for devlog description</p>
+                  <% if devlog_review.post_devlog.body.present? %>
+                    <p class="devlog-desc"><%= devlog_review.post_devlog.body %></p>
+                  <% else %>
+                    <p class="devlog-desc empty-body-warning">body was empty, contact @AVD, this shouldn't happen</p>
+                  <% end %>
 
                   <div class="devlog-media-section">
-                    <div class="media-label">Devlog Media</div>
-                    <div class="media-placeholder">
-                      <div class="placeholder-text">Placeholder for devlog media (images/videos)</div>
-                    </div>
+                    <div class="media-label">Devlog Media (<%= devlog_review.post_devlog.attachments.count %>)</div>
+                    <% if devlog_review.post_devlog.attachments.any? %>
+                      <div class="media-grid">
+                        <% devlog_review.post_devlog.attachments.each do |attachment| %>
+                          <% if attachment.video? %>
+                            <a href="<%= url_for(attachment) %>" target="_blank" class="media-item video-item">
+                              <video class="media-thumbnail" muted>
+                                <source src="<%= url_for(attachment) %>" type="<%= attachment.content_type %>">
+                              </video>
+                              <div class="media-type-badge">Video</div>
+                            </a>
+                          <% else %>
+                            <a href="<%= url_for(attachment) %>" target="_blank" class="media-item image-item">
+                              <%= image_tag attachment.variant(:thumb), class: "media-thumbnail", alt: "Devlog attachment" %>
+                            </a>
+                          <% end %>
+                        <% end %>
+                      </div>
+                    <% else %>
+                      <div class="media-placeholder">
+                        <div class="placeholder-text">No media attached</div>
+                      </div>
+                    <% end %>
                   </div>
 
                   <div class="devlog-time">

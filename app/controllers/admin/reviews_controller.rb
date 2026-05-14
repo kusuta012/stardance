@@ -13,7 +13,7 @@ module Admin
       authorize :admin, :access_reviews?
 
       @review = YswsReview
-        .includes(:project, :user, :reviewer, :devlog_reviews)
+        .includes(:project, :user, :reviewer, devlog_reviews: { post_devlog: :attachments_attachments })
         .find(params[:id])
     end
   end
