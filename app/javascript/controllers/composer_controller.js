@@ -1,11 +1,15 @@
 import { Controller } from "@hotwired/stimulus";
 
 export default class extends Controller {
-  static targets = ["dropZone", "grid", "fileInput"];
-  static values = { maxFiles: { type: Number, default: 4 } };
+  static targets = ["dropZone", "grid", "fileInput", "info", "timeLabel"];
+  static values = {
+    maxFiles: { type: Number, default: 4 },
+    previewTimeUrl: String,
+  };
 
   #files = [];
   #urls = [];
+  #timeFetched = false;
 
   connect() {
     this.#acceptedTypes = this.fileInputTarget.accept
@@ -15,6 +19,30 @@ export default class extends Controller {
 
   disconnect() {
     this.#revokeUrls();
+  }
+
+  showInfo() {
+    if (!this.hasInfoTarget) return;
+    this.infoTarget.hidden = false;
+    if (
+      this.hasTimeLabelTarget &&
+      this.hasPreviewTimeUrlValue &&
+      !this.#timeFetched
+    ) {
+      this.#timeFetched = true;
+      fetch(this.previewTimeUrlValue, {
+        headers: { Accept: "application/json" },
+      })
+        .then((r) => r.json())
+        .then(({ preview_time }) => {
+          this.timeLabelTarget.textContent = preview_time
+            ? `${preview_time} will be logged`
+            : "Could not load coding time";
+        })
+        .catch(() => {
+          this.timeLabelTarget.textContent = "Could not load coding time";
+        });
+    }
   }
 
   selectFiles() {

@@ -18,6 +18,7 @@
           html: { multipart: true,
                   data: { controller: "composer",
                           composer_max_files_value: Post::Devlog::MAX_ATTACHMENTS,
+                          composer_preview_time_url_value: preview_time_url,
                           action: "paste->composer#paste" } },
           class: "feed-composer__form",
           local: true do |f| %>
@@ -30,11 +31,20 @@
           <%= f.label :body, "What are you working on?", class: "feed-composer__label" %>
           <%= f.text_area :body,
                 class: "feed-composer__textarea",
-                rows: 3,
+                rows: 1,
                 maxlength: Post::Devlog::BODY_MAX_LENGTH,
                 placeholder: "What are you working on?",
-                aria: { label: "Devlog text" } %>
+                aria: { label: "Devlog text" },
+                data: { action: "focus->composer#showInfo" } %>
         </div>
+      </div>
+
+      <div class="feed-composer__info" data-composer-target="info" hidden>
+        <% if hackatime_linked? %>
+          <span class="feed-composer__info-text" data-composer-target="timeLabel">Loading time...</span>
+        <% else %>
+          <span class="feed-composer__info-text feed-composer__info-text--warn">Link a Hackatime project to post</span>
+        <% end %>
       </div>
 
       <div class="feed-composer__grid" data-composer-target="grid" data-count="0" hidden></div>

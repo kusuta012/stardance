@@ -17,6 +17,14 @@ module Posts
       selected_project.present?
     end
 
+    def hackatime_linked?
+      selected_project&.hackatime_keys&.present?
+    end
+
+    def preview_time_url
+      helpers.preview_time_project_devlogs_path(selected_project)
+    end
+
     def visible_projects
       projects.first(3)
     end

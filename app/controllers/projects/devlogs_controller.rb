@@ -45,6 +45,12 @@ class Projects::DevlogsController < ApplicationController
     end
   end
 
+  def preview_time
+    authorize @project, :create_devlog?
+    load_preview_time
+    render json: { preview_time: @preview_time }
+  end
+
   def edit
     authorize @devlog
   end

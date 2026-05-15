@@ -715,6 +715,9 @@ Rails.application.routes.draw do
       member do
         get :versions
       end
+      collection do
+        get :preview_time
+      end
     end
     resources :reports, only: [ :create ], module: :projects
     resource :og_image, only: [ :show ], module: :projects, defaults: { format: :png }
