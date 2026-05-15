@@ -112,9 +112,6 @@ application.register("project-thumbs-loop", ProjectThumbsLoopController);
 import ProjectThumbsScrollController from "./project_thumbs_scroll_controller";
 application.register("project-thumbs-scroll", ProjectThumbsScrollController);
 
-import RadioOptionController from "./radio_option_controller";
-application.register("radio-option", RadioOptionController);
-
 import ReadmeImageController from "./readme_image_controller";
 application.register("readme-image", ReadmeImageController);
 
