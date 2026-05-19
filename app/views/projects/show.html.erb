@@ -313,7 +313,7 @@
                               data: { turbo_frame: "project_hero" } %>
                 <% end %>
 
-                <% if current_user %>
+                <% if current_user && !is_member %>
                   <%= link_to (viewer_follow ? "Following" : "Follow"),
                               (viewer_follow ? unfollow_project_path(@project) : follow_project_path(@project)),
                               class: [ "project-show__pill", "project-show__pill--save", ("project-show__pill--following" if viewer_follow) ].compact.join(" "),
