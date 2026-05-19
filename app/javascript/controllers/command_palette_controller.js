@@ -5,18 +5,12 @@ export default class extends Controller {
 
   connect() {
     this._activeIndex = -1;
-    this._debounceTimer = null;
     this._boundGlobalKey = this._globalKey.bind(this);
     document.addEventListener("keydown", this._boundGlobalKey);
-    this.element.addEventListener("turbo:frame-render", () => {
-      this._activeIndex = -1;
-      this._clearActive();
-    });
   }
 
   disconnect() {
     document.removeEventListener("keydown", this._boundGlobalKey);
-    clearTimeout(this._debounceTimer);
   }
 
   _globalKey(event) {
@@ -32,8 +26,8 @@ export default class extends Controller {
 
   close() {
     this.element.close();
-    this._activeIndex = -1;
-    this._clearActive();
+    this.inputTarget.value = "";
+    this.filter();
   }
 
   handleCancel(event) {
@@ -51,11 +45,37 @@ export default class extends Controller {
     if (!inside) this.close();
   }
 
-  scheduleSubmit() {
-    clearTimeout(this._debounceTimer);
-    this._debounceTimer = setTimeout(() => {
-      this.element.querySelector("form").requestSubmit();
-    }, 150);
+  filter() {
+    const query = this.inputTarget.value.toLowerCase().trim();
+    const list = this.itemTargets[0]?.parentElement;
+    if (!list) return;
+
+    const scored = this.itemTargets.map((item) => {
+      if (!query) return { item, score: 0, match: true };
+      const title =
+        item
+          .querySelector(".command-palette__item-title")
+          ?.textContent.toLowerCase() || "";
+      const words = title.split(/\s+/);
+      const keywords = (item.dataset.keywords || "").split(" ").filter(Boolean);
+
+      let score = -1;
+      if (title.startsWith(query)) score = 3;
+      else if (words.some((w) => w.startsWith(query))) score = 2;
+      else if (title.includes(query)) score = 1;
+      else if (keywords.some((kw) => kw.startsWith(query))) score = 0;
+
+      return { item, score, match: score >= 0 };
+    });
+
+    scored.sort((a, b) => b.score - a.score);
+    scored.forEach(({ item, match }) => {
+      item.style.display = match ? "" : "none";
+      list.appendChild(item);
+    });
+
+    this._activeIndex = -1;
+    this._clearActive();
   }
 
   handleKey(event) {
@@ -100,12 +120,14 @@ export default class extends Controller {
   }
 
   _move(dir) {
-    const items = this.itemTargets;
-    if (!items.length) return;
-    this._activeIndex = Math.max(
-      0,
-      Math.min(items.length - 1, this._activeIndex + dir),
+    const visible = this.itemTargets.filter(
+      (el) => el.style.display !== "none",
     );
+    if (!visible.length) return;
+    const currentItem = this.itemTargets[this._activeIndex];
+    let visIdx = visible.indexOf(currentItem);
+    visIdx = Math.max(0, Math.min(visible.length - 1, visIdx + dir));
+    this._activeIndex = this.itemTargets.indexOf(visible[visIdx]);
     this._applyActive();
   }
 

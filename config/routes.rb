@@ -513,9 +513,6 @@ Rails.application.routes.draw do
   # Home
   get "home", to: "home#index"
 
-  # Command Palette
-  get "commands", to: "commands#index"
-
   # Leaderboard
   get "leaderboard", to: "leaderboard#index"
 
