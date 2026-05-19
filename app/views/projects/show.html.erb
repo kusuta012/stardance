@@ -402,17 +402,6 @@
       <%= render "projects/mission_panel", project: @project %>
     <% end %>
 
-    <% if @show_ai_coding_time_ignored_card %>
-      <aside id="ai-coding-time-ignored-card" class="project-show__notice">
-        <h2 class="project-show__notice-title">Note: AI coding time is being ignored</h2>
-        <p class="project-show__notice-body">Time spent coding entirely using AI agents like GitHub Copilot is being automatically filtered out of total project time. If you were using AI agents excessively and see discrepancies, this is likely why. Ask the support team in <a class="project-show__notice-link" href="https://hackclub.slack.com/app_redirect?channel=C09MATKQM8C" rel="noopener" target="_blank">#flavortown-help</a> if you have questions.</p>
-        <button class="project-show__notice-dismiss"
-                aria-label="Dismiss"
-                data-dismiss-url="<%= my_dismissals_path %>"
-                onclick="fetch(this.dataset.dismissUrl, {method: 'POST', headers: {'X-CSRF-Token': document.querySelector('meta[name=csrf-token]').content, 'Content-Type': 'application/x-www-form-urlencoded'}, body: 'thing_name=ai_coding_time_ignored_card'}); this.closest('#ai-coding-time-ignored-card').remove();">×</button>
-      </aside>
-    <% end %>
-
     <% if @votes_for_payout.present? %>
       <section class="project-show__payout-votes" aria-label="Votes needed to unlock payout">
         <h3 class="project-show__payout-votes-title">Votes needed to unlock payout <span id="votes-progress-info">ⓘ</span></h3>

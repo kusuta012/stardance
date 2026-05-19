@@ -1,7 +1,7 @@
 module User::StateFlags
   extend ActiveSupport::Concern
 
-  DISMISSIBLE_THINGS = %w[home_intro flagship_ad shop_suggestion_box willsbuilds_banner ai_coding_time_ignored_card].freeze
+  DISMISSIBLE_THINGS = %w[home_intro flagship_ad shop_suggestion_box willsbuilds_banner].freeze
 
   # Use symbols here; `tutorial_steps_completed` is the raw persisted array.
   def tutorial_steps = tutorial_steps_completed&.map(&:to_sym) || []
