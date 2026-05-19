@@ -376,14 +376,6 @@ class Project < ApplicationRecord
     marked_fire_at.present?
   end
 
-  def mark_fire!(user)
-    update!(marked_fire_at: Time.current, marked_fire_by: user)
-  end
-
-  def unmark_fire!
-    update!(marked_fire_at: nil, marked_fire_by: nil)
-  end
-
   def readme_is_raw_github_url?
     return false if readme_url.blank?
 

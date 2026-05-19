@@ -200,11 +200,11 @@
 #                                      project_ships POST   /projects/:project_id/ships(.:format)                                                             projects/ships#create
 #                                    project_mission DELETE /projects/:project_id/mission(.:format)                                                           projects/missions#destroy
 #                                                    POST   /projects/:project_id/mission(.:format)                                                           projects/missions#create
+#                                      project_magic DELETE /projects/:project_id/magic(.:format)                                                             projects/magic#destroy
+#                                                    POST   /projects/:project_id/magic(.:format)                                                             projects/magic#create
 #                   project_mission_step_completions POST   /projects/:project_id/mission_step_completions(.:format)                                          projects/mission_step_completions#create
 #                            mission_step_completion DELETE /mission_step_completions/:mission_step_id(.:format)                                              projects/mission_step_completions#destroy
 #                                     readme_project GET    /projects/:id/readme(.:format)                                                                    projects#readme
-#                                  mark_fire_project POST   /projects/:id/mark_fire(.:format)                                                                 projects#mark_fire
-#                                unmark_fire_project POST   /projects/:id/unmark_fire(.:format)                                                               projects#unmark_fire
 #                                     follow_project POST   /projects/:id/follow(.:format)                                                                    projects#follow
 #                                   unfollow_project DELETE /projects/:id/unfollow(.:format)                                                                  projects#unfollow
 #                                           projects POST   /projects(.:format)                                                                               projects#create
@@ -742,14 +742,13 @@ Rails.application.routes.draw do
       resource :review, only: [ :create ], module: :ships
     end
     resource :mission, only: [ :create, :destroy ], module: :projects, controller: "missions"
+    resource :magic, only: [ :create, :destroy ], module: :projects, controller: "magic"
     resources :mission_step_completions,
               only: [ :create, :destroy ],
               module: :projects,
               param: :mission_step_id
     member do
       get :readme
-      post :mark_fire
-      post :unmark_fire
       post :follow
       delete :unfollow
     end

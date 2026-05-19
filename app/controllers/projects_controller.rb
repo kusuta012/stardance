@@ -1,5 +1,5 @@
 class ProjectsController < ApplicationController
-  before_action :set_project_minimal, only: [ :edit, :update, :destroy, :mark_fire, :unmark_fire ]
+  before_action :set_project_minimal, only: [ :edit, :update, :destroy ]
   before_action :set_project, only: [ :show, :readme ]
 
   def show
@@ -215,77 +215,6 @@ class ProjectsController < ApplicationController
     rescue ActiveRecord::RecordInvalid => e
       flash[:alert] = e.record.errors.full_messages.to_sentence
       redirect_to project_path(@project)
-    end
-  end
-
-  def mark_fire
-    return render(json: { message: "Project not found" }, status: :not_found) unless @project
-    authorize @project
-
-    PaperTrail.request(whodunnit: current_user.id) do
-      fire_event = Post::FireEvent.create(
-        body: "⭐ #{current_user.display_name} marked your project as a Super Star! As a prize for your great work, look out for a bonus prize in the mail :)"
-      )
-
-      unless fire_event.persisted?
-        render json: { message: fire_event.errors.full_messages.to_sentence.presence || "Failed to mark project as a Super Star" }, status: :unprocessable_entity
-        next
-      end
-
-      post = @project.posts.create(user: current_user, postable: fire_event)
-
-      if post.persisted?
-        @project.mark_fire!(current_user)
-
-        PaperTrail::Version.create!(
-          item_type: "Project",
-          item_id: @project.id,
-          event: "mark_fire",
-          whodunnit: current_user.id,
-          object_changes: {
-            admin_action: [ nil, "mark_fire" ],
-            marked_fire_by_id: [ nil, current_user.id ],
-            created_post_id: [ nil, post.id ]
-          }
-        )
-
-        Project::PostToMagicJob.perform_later(@project)
-        Project::MagicHappeningLetterJob.perform_later(@project)
-
-        @project.users.each do |user|
-          SendSlackDmJob.perform_later(
-            user.slack_id,
-            blocks_path: "notifications/projects/super_star",
-            locals: { project: @project }
-          )
-        end
-
-        render json: { message: "Project marked as ⭐!", fire: true }, status: :ok
-      else
-        errors = (post.errors.full_messages + fire_event.errors.full_messages).uniq
-        render json: { message: errors.to_sentence.presence || "Failed to mark project as a Super Star" }, status: :unprocessable_entity
-      end
-    end
-  end
-
-  def unmark_fire
-    return render(json: { message: "Project not found" }, status: :not_found) unless @project
-    authorize @project
-
-    PaperTrail.request(whodunnit: current_user.id) do
-      @project.unmark_fire!
-
-      PaperTrail::Version.create!(
-        item_type: "Project",
-        item_id: @project.id,
-        event: "unmark_fire",
-        whodunnit: current_user.id,
-        object_changes: {
-          admin_action: [ nil, "unmark_fire" ]
-        }
-      )
-
-      render json: { message: "Project unmarked as Super Star", fire: false }, status: :ok
     end
   end
 

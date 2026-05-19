@@ -27,18 +27,6 @@ class ProjectPolicy < ApplicationPolicy
         user&.admin? || user&.has_role?(:fraud_dept)
     end
 
-    def mark_fire?
-        return false unless user&.admin? || user&.has_role?(:fraud_dept)
-        return false if record.users.exists?(id: user.id)
-        return false if user.has_role?(:fraud_dept) && !user.admin? && record.users.any?(&:fraud_dept?)
-
-        true
-    end
-
-    def unmark_fire?
-        user&.admin? || user&.has_role?(:fraud_dept)
-    end
-
     def ship?
         member?
     end
