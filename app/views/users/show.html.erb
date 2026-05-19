@@ -180,9 +180,9 @@
       <p class="profile-tab-content__empty">No activity yet.</p>
     <% end %>
   <% when "devlogs" %>
-    <p class="profile-tab-content__empty">Devlogs</p>
+    <p class="profile-tab-content__empty">No devlogs yet.</p>
   <% when "replies" %>
-    <p class="profile-tab-content__empty">Replies</p>
+    <p class="profile-tab-content__empty">No replies yet.</p>
   <% when "projects" %>
     <% if @projects.any? %>
       <ul class="project-list">
@@ -244,13 +244,17 @@
         <% if own_profile %>
           <li class="project-list__item">
             <%= link_to new_project_path, class: "profile-project-card profile-project-card--new" do %>
-              <span>Create new +</span>
+              <span>Create a new Project</span>
             <% end %>
           </li>
         <% end %>
       </ul>
     <% else %>
-      <p class="profile-tab-content__empty">No projects yet.</p>
+      <% if own_profile %>
+        <%= link_to "Create a new Project!", new_project_path, class: "profile-tab-content__empty profile-tab-content__empty--link" %>
+      <% else %>
+        <p class="profile-tab-content__empty">No projects yet.</p>
+      <% end %>
     <% end %>
   <% end %>
 </section>
