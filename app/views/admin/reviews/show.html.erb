@@ -26,10 +26,20 @@
         <% if repo_info %>
           <div class="repo-platform-card">
             <% contributions = fetch_platform_contributions(repo_info[:platform], repo_info[:username]) %>
+            <% contribution_count = fetch_contribution_count(repo_info[:platform], repo_info[:username]) %>
+            <% skill_level = contribution_skill_level(contribution_count) %>
             <div class="platform-header">
-              <span class="platform-username">@<%= repo_info[:username] %></span>
+              <% profile_url = platform_profile_url(repo_info[:platform], repo_info[:username]) %>
+              <% if profile_url %>
+                <%= link_to "@#{repo_info[:username]}", profile_url, class: "platform-username", target: "_blank", rel: "noopener noreferrer" %>
+              <% else %>
+                <span class="platform-username">@<%= repo_info[:username] %></span>
+              <% end %>
               <% if contributions %>
                 <span class="contribution-count">• <%= contributions %></span>
+              <% end %>
+              <% if skill_level %>
+                <span class="skill-level-badge <%= skill_level[:class] %>"><%= skill_level[:label] %></span>
               <% end %>
             </div>
             <% calendar_data = prepare_contribution_calendar_data(repo_info[:platform], repo_info[:username]) %>
@@ -316,8 +326,8 @@
 
               <div class="devlog-time">
                 Original Time:
-                <span class="time-value"><%= devlog_review.original_minutes || 0 %> minutes</span>
-                <em>(<%= ((devlog_review.original_minutes || 0) / 60.0).round(1) %> hrs)</em>
+                <span class="time-value"><%= ((devlog_review.original_minutes || 0) / 60.0).round(1) %> hrs</span>
+                <em>(<%= devlog_review.original_minutes || 0 %> minutes)</em>
               </div>
 
               <div class="devlog-git-section">

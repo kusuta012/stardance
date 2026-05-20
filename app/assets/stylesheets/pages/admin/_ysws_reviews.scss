@@ -912,6 +912,13 @@
       font-size: var(--font-size-xxs);
       font-weight: 600;
       white-space: nowrap;
+      text-decoration: none;
+      transition: color 0.2s ease;
+
+      &:hover {
+        color: var(--color-space-text);
+        text-decoration: underline;
+      }
     }
 
     .contribution-count {
@@ -919,6 +926,36 @@
       font-size: var(--font-size-xxs);
       font-weight: 400;
       white-space: nowrap;
+    }
+
+    .skill-level-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: var(--font-size-xxs);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      white-space: nowrap;
+      border: 1.5px solid;
+
+      &.level-beginner {
+        background: rgba(255, 219, 77, 0.1);
+        border-color: var(--color-brand-yellow);
+        color: var(--color-brand-yellow);
+      }
+
+      &.level-intermediate {
+        background: rgba(149, 219, 255, 0.1);
+        border-color: var(--color-brand-blue);
+        color: var(--color-brand-blue);
+      }
+
+      &.level-advanced {
+        background: rgba(129, 255, 255, 0.1);
+        border-color: var(--color-brand-mint);
+        color: var(--color-brand-mint);
+      }
     }
   }
 

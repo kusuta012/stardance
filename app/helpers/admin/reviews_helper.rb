@@ -64,6 +64,22 @@ module Admin::ReviewsHelper
     end
   end
 
+  # Fetch raw contribution count for a user
+  # Returns integer count or nil if unavailable
+  def fetch_contribution_count(platform, username)
+    return nil if platform.blank? || username.blank?
+
+    result = Admin::ReviewPlatformService.fetch_contributions(platform, username)
+
+    if result[:error]
+      nil
+    elsif result[:total]
+      result[:total]
+    else
+      nil
+    end
+  end
+
   # Fetch full platform contribution data for calendar visualization
   # Returns hash with :contributions array and :total, or nil if unavailable
   # Example: { contributions: [{date: "2024-01-01", count: 5}, ...], total: 365 }
@@ -147,6 +163,42 @@ module Admin::ReviewsHelper
     end
 
     days
+  end
+
+  # Generate profile URL for a user on their git hosting platform
+  # Returns the full URL to the user's profile
+  def platform_profile_url(platform, username)
+    return nil if platform.blank? || username.blank?
+
+    case platform
+    when "github"
+      "https://github.com/#{username}"
+    when "gitlab"
+      "https://gitlab.com/#{username}"
+    when "codeberg"
+      "https://codeberg.org/#{username}"
+    when "bitbucket"
+      "https://bitbucket.org/#{username}"
+    when "sourcehut"
+      "https://sr.ht/~#{username}"
+    else
+      nil # Can't generate URL for unknown platforms
+    end
+  end
+
+  # Determine skill level based on contribution count
+  # Returns hash with :label and :class for styling
+  # 0-499: Beginner, 500-999: Intermediate, 1000+: Advanced
+  def contribution_skill_level(contribution_count)
+    return nil if contribution_count.nil?
+
+    if contribution_count < 500
+      { label: "Beginner", class: "level-beginner" }
+    elsif contribution_count < 1000
+      { label: "Intermediate", class: "level-intermediate" }
+    else
+      { label: "Advanced", class: "level-advanced" }
+    end
   end
 
   private
