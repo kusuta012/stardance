@@ -37,10 +37,10 @@ class DevlogReview < ApplicationRecord
   validates :original_minutes, numericality: { greater_than_or_equal_to: 0 }, allow_nil: false
   validates :approved_minutes, numericality: { greater_than_or_equal_to: 0 }, allow_nil: true
 
-  # When approved, must have positive minutes
+  # When approved, must have non-negative minutes
   validates :approved_minutes,
     presence: true,
-    numericality: { greater_than: 0 },
+    numericality: { greater_than_or_equal_to: 0 },
     if: :approved?
 
   # When rejected, approved_minutes should be 0
