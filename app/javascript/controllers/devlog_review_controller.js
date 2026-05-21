@@ -126,7 +126,9 @@ export default class extends Controller {
   quickAdjust(event) {
     const action = event.target.dataset.adjustAction;
     const parsed = parseInt(this.minutesInputTarget.value, 10);
-    const currentMinutes = Number.isNaN(parsed) ? this.originalMinutesValue : parsed;
+    const currentMinutes = Number.isNaN(parsed)
+      ? this.originalMinutesValue
+      : parsed;
     let newMinutes;
 
     switch (action) {
