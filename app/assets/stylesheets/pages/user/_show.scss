@@ -188,6 +188,49 @@ turbo-frame#profile_tabs {
   font-weight: 700;
   line-height: 1;
   color: var(--color-space-text);
+
+  .profile--editing & {
+    display: none;
+  }
+}
+
+.profile__handle-edit {
+  display: none;
+  align-items: baseline;
+  gap: 2px;
+  min-width: 0;
+  font-size: var(--font-size-xxxxl);
+  font-weight: 700;
+  line-height: 1;
+  color: var(--color-space-text);
+
+  .profile--editing & {
+    display: flex;
+  }
+}
+
+.profile__handle-edit-at {
+  flex-shrink: 0;
+}
+
+.profile__handle-input {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  outline: none;
+  font: inherit;
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-decoration-color: var(--color-space-text-muted);
+  text-underline-offset: 6px;
+
+  &:focus {
+    text-decoration-color: var(--color-brand-mint);
+  }
 }
 
 .profile__joined {

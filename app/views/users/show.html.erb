@@ -56,6 +56,16 @@
 
           <div class="profile__identity-text">
             <h1 class="profile__handle">@<%= @user.display_name %></h1>
+            <% if own_profile %>
+              <div class="profile__handle-edit">
+                <span class="profile__handle-edit-at" aria-hidden="true">@</span>
+                <%= f.text_field :display_name,
+                                 class: "profile__handle-input",
+                                 maxlength: 60,
+                                 required: true,
+                                 aria: { label: "Display name" } %>
+              </div>
+            <% end %>
             <p class="profile__joined">Joined <%= @user.created_at.to_date.strftime("%-d %b %Y").downcase %></p>
           </div>
         </div>
