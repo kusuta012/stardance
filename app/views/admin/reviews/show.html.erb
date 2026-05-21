@@ -1,37 +1,485 @@
-<section class="weekend">
-  <div class="weekend__divider" aria-hidden="true">
-    <span class="weekend__divider-line"></span>
-    <% 2.times do |i| %>
-      <svg class="weekend__divider-sparkle weekend__divider-sparkle--<%= i.zero? ? "left" : "right" %>" viewBox="206.75 4 28.5 38" xmlns="http://www.w3.org/2000/svg" focusable="false">
-        <path d="M219.878 4.56347C220.11 3.49747 221.63 3.49747 221.862 4.56347L224.565 16.998C224.635 17.3195 224.856 17.5872 225.159 17.7162L234.99 21.9063C235.813 22.257 235.813 23.4233 234.99 23.774L225.159 27.9642C224.856 28.0932 224.635 28.3609 224.565 28.6824L221.862 41.1169C221.63 42.1829 220.11 42.1829 219.878 41.1169L217.175 28.6824C217.105 28.3609 216.884 28.0932 216.581 27.9642L206.75 23.774C205.927 23.4233 205.927 22.257 206.75 21.9063L216.581 17.7162C216.884 17.5872 217.105 17.3195 217.175 16.998L219.878 4.56347Z" fill="#EEE7BB" />
-      </svg>
-    <% end %>
+<% content_for :title, "YSWS Review ##{@review.id}" %>
+
+<main class="admin-ysws-reviews" role="main" data-controller="review-sidebar fraud-report media-viewer" data-fraud-report-review-id-value="<%= @review.id %>">
+  <!-- Header Section -->
+  <div class="review-detail-header">
+    <%= link_to "← back", "/admin/review", class: "btn-back", "aria-label": "Back to review queue" %>
+
+    <div class="header-content">
+      <div class="header-left">
+        <h1>YSWS Review</h1>
+        <div style="display: flex; align-items: center; gap: var(--space-m);">
+          <h2 class="project-name"><%= @review.project.title %></h2>
+          <% if @review.reviewed_at %>
+            <span class="status-done">done</span>
+          <% else %>
+            <span class="status-pending">pending</span>
+          <% end %>
+        </div>
+        <% unless @review.ship_cert_id %>
+          <p class="ship-event-note">This is a standalone ship event (reship)</p>
+        <% end %>
+      </div>
+
+      <div class="header-actions">
+        <% repo_info = parse_repo_info(@review.project.repo_url) %>
+        <% if repo_info %>
+          <div class="repo-platform-card">
+            <% contributions = fetch_platform_contributions(repo_info[:platform], repo_info[:username]) %>
+            <% contribution_count = fetch_contribution_count(repo_info[:platform], repo_info[:username]) %>
+            <% skill_level = contribution_skill_level(contribution_count) %>
+            <div class="platform-header">
+              <% profile_url = platform_profile_url(repo_info[:platform], repo_info[:username]) %>
+              <% if profile_url %>
+                <%= link_to "@#{repo_info[:username]}", profile_url, class: "platform-username", target: "_blank", rel: "noopener noreferrer" %>
+              <% else %>
+                <span class="platform-username">@<%= repo_info[:username] %></span>
+              <% end %>
+              <% if contributions %>
+                <span class="contribution-count">• <%= contributions %></span>
+              <% end %>
+              <% if skill_level %>
+                <span class="skill-level-badge <%= skill_level[:class] %>"><%= skill_level[:label] %></span>
+              <% end %>
+            </div>
+            <% calendar_data = prepare_contribution_calendar_data(repo_info[:platform], repo_info[:username]) %>
+            <% if calendar_data %>
+              <div class="contribution-calendar"
+                   data-controller="github-calendar"
+                   data-github-calendar-days-value="<%= calendar_data.to_json %>">
+              </div>
+            <% end %>
+          </div>
+        <% end %>
+
+        <% if @review.reviewed_at %>
+          <button class="btn-action btn-undo" disabled>
+            undo review
+          </button>
+        <% end %>
+
+        <button class="btn-action btn-report" data-action="click->fraud-report#open">
+          🚩 Report to Fraud Squad!
+        </button>
+      </div>
+    </div>
   </div>
 
-  <h2 class="weekend__title">
-    Get these in a <span class="weekend__title-accent">weekend</span>.
-  </h2>
+  <!-- Popup Toggle Button (only visible in popup mode) -->
+  <button type="button"
+          class="review-sidebar-toggle"
+          data-review-sidebar-target="toggle"
+          data-action="click->review-sidebar#togglePopup"
+          aria-label="Toggle project details">
+    Details
+  </button>
 
-  <p class="weekend__subtitle">By the end of this weekend, you can get something real. Here&rsquo;s what a few hours can get you.</p>
+  <!-- Main Content Grid -->
+  <div class="review-detail-grid">
+    <!-- Left Column -->
+    <div class="review-detail-left">
+      <!-- Ship Cert Video Section -->
+      <section class="review-card video-card">
+        <h3>Ship Cert Video</h3>
+        <div class="video-placeholder">
+          <div class="placeholder-text">Placeholder for ship cert video</div>
+        </div>
+      </section>
 
-  <ul class="weekend__items">
-    <li class="weekend__item weekend__item--blahaj">
-      <div class="weekend__item-img-wrap">
-        <%= image_tag image_url("landing/weekend/blahaj.png"), class: "weekend__item-img", alt: "IKEA Blåhaj shark plush", loading: "lazy" %>
+      <!-- Time Stats Section -->
+      <section class="review-card stats-card">
+        <h3>Time Stats</h3>
+        <div class="stats-grid">
+          <div class="stat-box">
+            <div class="stat-label">Total Time</div>
+            <div class="stat-value">
+              <%= (@stats[:total_minutes] / 60.0).round(1) %>h
+            </div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Avg per Devlog</div>
+            <div class="stat-value">
+              <%= (@stats[:avg_minutes] / 60.0).round(1) %>h
+            </div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Longest</div>
+            <div class="stat-value">
+              <%= (@stats[:max_minutes] / 60.0).round(1) %>h
+            </div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Devlogs ≥1hr</div>
+            <div class="stat-value">
+              <%= @stats[:one_hour_plus_count] %>
+            </div>
+          </div>
+        </div>
+        <div class="time-chart">
+          <div class="chart-title">Time Distribution Across Devlogs</div>
+          <% if @review.devlog_reviews.any? %>
+            <%
+              chart_data = @review.devlog_reviews.each_with_index.map do |devlog_review, index|
+                {
+                  label: "Devlog #{index + 1}",
+                  minutes: devlog_review.original_minutes || 0
+                }
+              end
+            %>
+            <div data-controller="devlog-time-chart"
+                 data-devlog-time-chart-data-value="<%= chart_data.to_json %>"
+                 class="d3-chart-container">
+            </div>
+          <% else %>
+            <div class="placeholder-text">No devlogs to chart</div>
+          <% end %>
+        </div>
+      </section>
+
+      <!-- Boss Note Section -->
+      <section class="review-card boss-note-card">
+        <h3>Note from da boss of YSWS - Alex (aka AVD)</h3>
+        <div class="boss-note-content">
+          <div class="note-title">Reject if:</div>
+          <ul>
+            <li>low quality to the point it doesn't do what it says it does (shipwrights messed up - return to them)</li>
+            <li>Looks like ai, but is undeclared (check declaration on the ft project page)</li>
+            <li>Looks like over 30% ai - even if it is declared</li>
+            <li>Looks like it isn't shipped (shipwrights messed up)</li>
+            <li>last project edit was before the event launch</li>
+            <li>project was worked on before event, and not marked as Project Update: in description (return to shipwrights)</li>
+          </ul>
+        </div>
+      </section>
+    </div>
+
+    <!-- Right Column -->
+    <div class="review-detail-right" data-review-sidebar-target="sidebar">
+      <!-- Details Card -->
+      <section class="review-card details-card">
+        <div class="details-list">
+          <div class="detail-item">
+            <span class="detail-key">Project:</span>
+            <span class="detail-value">
+              <%= link_to @review.project.title, admin_project_path(@review.project), class: "link-primary" %>
+            </span>
+          </div>
+
+          <div class="detail-item">
+            <span class="detail-key">Submitter:</span>
+            <span class="detail-value" style="display: flex; align-items: center; gap: var(--space-xs); flex-wrap: wrap;">
+              <span><%= @review.user.display_name || @review.user.email || "Unknown User" %></span>
+              <span class="fraud-links" style="display: inline-flex; gap: var(--space-xxs);">
+                <a href="#" class="fraud-link" target="_blank">Billy</a>
+                <a href="#" class="fraud-link" target="_blank">Joe</a>
+              </span>
+            </span>
+          </div>
+
+          <div class="detail-item">
+            <span class="detail-key">Type:</span>
+            <span class="detail-value">
+              <% if @review.project.project_categories.present? %>
+                <%= @review.project.project_categories.join(", ") %>
+              <% else %>
+                unknown
+              <% end %>
+            </span>
+          </div>
+
+          <div class="detail-item">
+            <span class="detail-key">AI Declaration:</span>
+            <span class="detail-value ai-declaration">
+              <% if @review.project.ai_declaration.present? %>
+                <%= @review.project.ai_declaration %>
+              <% else %>
+                <em>Not declared</em>
+              <% end %>
+            </span>
+          </div>
+
+          <div class="detail-item" style="display: grid; grid-template-columns: auto 1fr; column-gap: var(--space-m);">
+            <span class="detail-key">Ship Certified:</span>
+            <span class="detail-value">
+              <%= @review.ship_cert_id ? "Yes" : "N/A (Reship)" %>
+            </span>
+            <span class="detail-key">Ship Cert:</span>
+            <span class="detail-value">
+              <% if @review.ship_cert_id %>
+                #<%= @review.ship_cert_id %>
+              <% else %>
+                N/A
+              <% end %>
+            </span>
+          </div>
+
+          <% if @review.reviewer %>
+            <div class="detail-item">
+              <span class="detail-key">YSWS Reviewer:</span>
+              <span class="detail-value">
+                <%= link_to (@review.reviewer.display_name || @review.reviewer.email || "Unknown"), admin_user_path(@review.reviewer), class: "link-primary" %>
+              </span>
+            </div>
+          <% end %>
+
+          <% if @review.summary_justification.present? %>
+            <div class="detail-item">
+              <span class="detail-key">Return Reason:</span>
+              <span class="detail-value return-reason">
+                <%= @review.summary_justification %>
+              </span>
+            </div>
+          <% end %>
+        </div>
+
+        <div class="detail-links">
+          <% if @review.project.repo_url.present? %>
+            <a href="<%= @review.project.repo_url %>" class="detail-link-btn" target="_blank">Repo</a>
+          <% else %>
+            <span class="detail-link-btn disabled" title="No repo URL available">Repo</span>
+          <% end %>
+          <% if @review.project.demo_url.present? %>
+            <a href="<%= @review.project.demo_url %>" class="detail-link-btn" target="_blank">Demo</a>
+          <% else %>
+            <span class="detail-link-btn disabled" title="No demo URL available">Demo</span>
+          <% end %>
+          <% if @review.project.readme_url.present? %>
+            <a href="<%= @review.project.readme_url %>" class="detail-link-btn" target="_blank">Readme</a>
+          <% else %>
+            <span class="detail-link-btn disabled" title="No readme URL available">Readme</span>
+          <% end %>
+        </div>
+      </section>
+
+      <!-- Description Card -->
+      <section class="review-card description-card">
+        <h3>Description</h3>
+        <div class="description-content">
+          <% if @review.project.description.present? %>
+            <pre><%= @review.project.description %></pre>
+          <% else %>
+            <pre class="placeholder-text">No description provided</pre>
+          <% end %>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <div style="height: 25px;"></div>
+
+  <!-- Devlogs Section (Full Width) -->
+  <section class="review-card devlogs-card">
+    <div class="devlogs-header">
+      <h3>Devlogs (<%= @review.devlog_reviews.count %>)</h3>
+    </div>
+
+    <% if @review.devlog_reviews.any? %>
+      <div class="devlogs-list">
+        <% @review.devlog_reviews.each_with_index do |devlog_review, index| %>
+          <div class="devlog-item"
+               data-controller="devlog-review"
+               data-devlog-review-id-value="<%= devlog_review.id %>"
+               data-devlog-review-original-minutes-value="<%= devlog_review.original_minutes || 0 %>"
+               data-devlog-review-status-value="<%= devlog_review.status %>"
+               <%= 'data-review-sidebar-target="trigger"'.html_safe if index == 0 %>>
+            <div class="devlog-main">
+              <div class="devlog-header-row">
+                <span class="devlog-id">Devlog #<%= devlog_review.post_devlog.id %></span>
+                <% if devlog_review.approved? %>
+                  <span class="devlog-status status-approved">Approved</span>
+                <% elsif devlog_review.rejected? %>
+                  <span class="devlog-status status-rejected">Rejected</span>
+                <% end %>
+              </div>
+
+              <% if devlog_review.post_devlog.body.present? %>
+                <p class="devlog-desc"><%= devlog_review.post_devlog.body %></p>
+              <% else %>
+                <p class="devlog-desc empty-body-warning">body was empty, contact @AVD, this shouldn't happen</p>
+              <% end %>
+
+              <div class="devlog-media-section">
+                <div class="media-label">Devlog Media (<%= devlog_review.post_devlog.attachments.size %>)</div>
+                <% if devlog_review.post_devlog.attachments.any? %>
+                  <div class="media-grid">
+                    <% devlog_review.post_devlog.attachments.each do |attachment| %>
+                      <% if attachment.video? %>
+                        <a href="<%= url_for(attachment) %>" class="media-item video-item" data-action="click->media-viewer#open">
+                          <video class="media-thumbnail" muted>
+                            <source src="<%= url_for(attachment) %>" type="<%= attachment.content_type %>">
+                          </video>
+                          <div class="media-type-badge">Video</div>
+                        </a>
+                      <% else %>
+                        <a href="<%= url_for(attachment) %>" class="media-item image-item" data-action="click->media-viewer#open">
+                          <%= image_tag attachment.variant(:thumb), class: "media-thumbnail", alt: "Devlog attachment" %>
+                        </a>
+                      <% end %>
+                    <% end %>
+                  </div>
+                <% else %>
+                  <div class="media-placeholder">
+                    <div class="placeholder-text">No media attached</div>
+                  </div>
+                <% end %>
+              </div>
+
+              <div class="devlog-time">
+                Original Time:
+                <span class="time-value"><%= ((devlog_review.original_minutes || 0) / 60.0).round(1) %> hrs</span>
+                <em>(<%= devlog_review.original_minutes || 0 %> minutes)</em>
+              </div>
+
+              <div class="devlog-git-section">
+                <div class="git-label">Git Activity</div>
+                <div class="chart-placeholder small">
+                  <div class="placeholder-text">Placeholder for Commit Chart</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Review Decision Panel -->
+            <div class="devlog-review-panel"
+                 data-devlog-review-target="panel">
+              <div class="panel-title">Review Decision</div>
+
+              <div class="panel-section">
+                <div class="panel-label">Status:</div>
+                <div class="status-buttons">
+                  <button class="status-btn btn-approve"
+                          data-devlog-review-target="approveButton"
+                          data-action="click->devlog-review#approve">
+                    ✓ Approve
+                  </button>
+                  <button class="status-btn btn-reject"
+                          data-devlog-review-target="rejectButton"
+                          data-action="click->devlog-review#reject">
+                    ✗ Reject
+                  </button>
+                </div>
+              </div>
+
+              <div class="panel-section">
+                <div class="panel-label">Approved Minutes:</div>
+                <div class="minutes-input-group">
+                  <input type="number"
+                         value="<%= devlog_review.approved_minutes || devlog_review.original_minutes || 0 %>"
+                         class="minutes-input"
+                         data-devlog-review-target="minutesInput"
+                         data-action="input->devlog-review#updateMinutes"
+                         min="0">
+                  <span class="minutes-label">minutes</span>
+                </div>
+                <div class="quick-adjust-buttons">
+                  <button class="adjust-btn"
+                          data-action="click->devlog-review#quickAdjust"
+                          data-adjust-action="50%">50%</button>
+                  <button class="adjust-btn"
+                          data-action="click->devlog-review#quickAdjust"
+                          data-adjust-action="25%">25%</button>
+                  <button class="adjust-btn"
+                          data-action="click->devlog-review#quickAdjust"
+                          data-adjust-action="-30">-30min</button>
+                  <button class="adjust-btn"
+                          data-action="click->devlog-review#quickAdjust"
+                          data-adjust-action="-60">-1hr</button>
+                  <button class="adjust-btn"
+                          data-action="click->devlog-review#quickAdjust"
+                          data-adjust-action="reset">Reset</button>
+                </div>
+              </div>
+
+              <div class="panel-section">
+                <div class="panel-label">Internal Notes:</div>
+                <textarea class="notes-textarea"
+                          placeholder="notes..."
+                          data-devlog-review-target="notesTextarea"
+                          data-action="input->devlog-review#updateNotes"><%= devlog_review.justification %></textarea>
+              </div>
+            </div>
+          </div>
+        <% end %>
       </div>
-      <span class="weekend__item-label">~13h &middot; ikea blahaj plush</span>
-    </li>
-    <li class="weekend__item weekend__item--cat-printer">
-      <div class="weekend__item-img-wrap">
-        <%= image_tag image_url("landing/weekend/cat-printer.png"), class: "weekend__item-img", alt: "Cat thermal printer", loading: "lazy" %>
+    <% else %>
+      <div class="empty-devlogs">
+        <p>no devlogs found...</p>
       </div>
-      <span class="weekend__item-label">~5h &middot; cat thermal printer</span>
-    </li>
-    <li class="weekend__item weekend__item--bubble-tea">
-      <div class="weekend__item-img-wrap">
-        <%= image_tag image_url("landing/weekend/bubble-tea.avif"), class: "weekend__item-img", alt: "Bubble tea", loading: "lazy" %>
+    <% end %>
+  </section>
+
+  <div style="height: 25px;"></div>
+
+  <!-- Action Buttons Section (Full Width) -->
+  <section class="review-card actions-card">
+    <div class="checklist-warning">
+      <div class="warning-title">Checklist (do this if u don't wanna Alex to get mad..)</div>
+      <div class="warning-items">
+        <div>• Check the Demo link (cuz u didn't..)</div>
+        <div>• Check the Repo link (cuz u didn't..)</div>
       </div>
-      <span class="weekend__item-label">~3h &middot; bubble tea grant</span>
-    </li>
-  </ul>
-</section>
+    </div>
+
+    <div class="action-buttons-grid">
+      <button class="action-btn btn-secondary" disabled>
+        Cap Devlogs to 600 min
+      </button>
+      <button class="action-btn btn-approve-all" disabled>
+        Approve All Devlogs
+      </button>
+      <button class="action-btn btn-reject-all" disabled>
+        Reject All Devlogs
+      </button>
+      <button class="action-btn btn-return" disabled>
+        Return to Ship Certs
+      </button>
+      <button class="action-btn btn-complete" disabled>
+        Complete Review
+      </button>
+    </div>
+  </section>
+
+  <!-- Fraud Report Modal -->
+  <div class="fraud-report-modal" data-fraud-report-target="modal">
+    <div class="fraud-report-modal__content" data-action="click->fraud-report#stopPropagation">
+      <div class="fraud-report-modal__header">
+        <h2>Report to Fraud Squad</h2>
+        <button class="fraud-report-modal__close" data-action="click->fraud-report#close" aria-label="Close modal">
+          ×
+        </button>
+      </div>
+
+      <div class="fraud-report-modal__body">
+        <label for="fraud-details" class="fraud-report-modal__label">
+          Describe the issue (minimum 20 characters):
+        </label>
+        <textarea
+          id="fraud-details"
+          class="fraud-report-modal__textarea"
+          data-fraud-report-target="textarea"
+          placeholder="Explain why you're reporting this project to the fraud squad..."
+          rows="6"
+        ></textarea>
+      </div>
+
+      <div class="fraud-report-modal__footer">
+        <button class="fraud-report-modal__cancel" data-action="click->fraud-report#close">
+          Cancel
+        </button>
+        <button class="fraud-report-modal__submit" data-action="click->fraud-report#submit" data-fraud-report-target="submitButton">
+          Submit Report
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Media Viewer Modal -->
+  <div class="media-viewer-modal" data-media-viewer-target="modal">
+    <button class="media-viewer-modal__close" data-action="click->media-viewer#close" aria-label="Close media viewer">
+      ×
+    </button>
+    <div class="media-viewer-modal__content" data-action="click->media-viewer#stopPropagation" data-media-viewer-target="content">
+      <img class="media-viewer-modal__image hidden" data-media-viewer-target="image" alt="Devlog media">
+      <video class="media-viewer-modal__video hidden" data-media-viewer-target="video" controls autoplay></video>
+    </div>
+  </div>
+</main>
