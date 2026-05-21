@@ -7,10 +7,24 @@ export default class extends Controller {
   };
 
   connect() {
-    this.element.addEventListener("click", this.toggle);
+    this.boundShow = this.show.bind(this);
+    this.boundHide = this.hide.bind(this);
     this.boundOutsideClick = this.handleOutsideClick.bind(this);
     this.boundKey = this.handleKey.bind(this);
     this.boundReposition = this.reposition.bind(this);
+
+    // Hover-capable pointers get hover/focus reveal; coarse-pointer (touch)
+    // devices fall back to tap-to-toggle, since hover semantics don't apply.
+    this.hoverCapable = window.matchMedia?.("(hover: hover)")?.matches ?? false;
+
+    if (this.hoverCapable) {
+      this.element.addEventListener("mouseenter", this.boundShow);
+      this.element.addEventListener("mouseleave", this.boundHide);
+      this.element.addEventListener("focusin", this.boundShow);
+      this.element.addEventListener("focusout", this.boundHide);
+    } else {
+      this.element.addEventListener("click", this.toggle);
+    }
 
     // The sidebar expands on hover/focus and collapses when the cursor
     // leaves. Once collapsed, the popover would be pointing at where the
@@ -26,7 +40,14 @@ export default class extends Controller {
   }
 
   disconnect() {
-    this.element.removeEventListener("click", this.toggle);
+    if (this.hoverCapable) {
+      this.element.removeEventListener("mouseenter", this.boundShow);
+      this.element.removeEventListener("mouseleave", this.boundHide);
+      this.element.removeEventListener("focusin", this.boundShow);
+      this.element.removeEventListener("focusout", this.boundHide);
+    } else {
+      this.element.removeEventListener("click", this.toggle);
+    }
     this.sidebar?.removeEventListener("mouseleave", this.boundOnSidebarLeave);
     this.pinButton?.removeEventListener("click", this.boundOnSidebarLeave);
     this.hide();
@@ -43,6 +64,8 @@ export default class extends Controller {
   };
 
   show() {
+    if (this.popover) return;
+
     this.popover = document.createElement("div");
     this.popover.className = "locked-tab-popover";
     this.popover.setAttribute("role", "tooltip");
