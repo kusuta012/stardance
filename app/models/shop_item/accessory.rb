@@ -5,7 +5,6 @@
 #  id                                :bigint           not null, primary key
 #  accessory_tag                     :string
 #  agh_contents                      :jsonb
-#  attached_shop_item_ids            :bigint           default([]), is an Array
 #  blocked_countries                 :string           default([]), is an Array
 #  buyable_by_self                   :boolean          default(TRUE)
 #  default_assigned_user_id_au       :bigint
@@ -38,7 +37,6 @@
 #  max_qty                           :integer
 #  mission_prize_only                :boolean          default(FALSE), not null
 #  name                              :string
-#  old_prices                        :integer          default([]), is an Array
 #  one_per_person_ever               :boolean
 #  past_purchases                    :integer          default(0)
 #  payout_percentage                 :integer          default(0)
@@ -87,6 +85,9 @@
 #  fk_rails_...  (user_id => users.id)
 #
 class ShopItem::Accessory < ShopItem
+  has_many :shop_item_attachments, foreign_key: :accessory_item_id, dependent: :destroy
+  has_many :parent_items, through: :shop_item_attachments, source: :parent_item
+
   validate :must_have_attached_items_if_not_buyable_by_self
 
   def has_tag?
@@ -94,9 +95,7 @@ class ShopItem::Accessory < ShopItem
   end
 
   def attached_shop_items
-    return ShopItem.none if attached_shop_item_ids.blank?
-
-    ShopItem.where(id: attached_shop_item_ids)
+    parent_items
   end
 
   def can_be_purchased_standalone?
@@ -104,7 +103,7 @@ class ShopItem::Accessory < ShopItem
   end
 
   def can_attach_to?(shop_item)
-    attached_shop_item_ids.include?(shop_item.id)
+    shop_item_attachments.exists?(parent_item_id: shop_item.id)
   end
 
   def total_cost_with(parent_item)
@@ -122,8 +121,8 @@ class ShopItem::Accessory < ShopItem
   private
 
   def must_have_attached_items_if_not_buyable_by_self
-    if !buyable_by_self? && attached_shop_item_ids.blank?
-      errors.add(:attached_shop_item_ids, "must have at least one attached item when not buyable by self")
+    if !buyable_by_self? && parent_items.empty?
+      errors.add(:base, "must have at least one attached item when not buyable by self")
     end
   end
 end

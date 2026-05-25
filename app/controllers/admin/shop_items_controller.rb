@@ -11,7 +11,11 @@ module Admin
 
     def new
       authorize :admin, shop_manager? ? :manage_draft_shop_items? : :manage_shop?
-      @shop_item = ShopItem.new
+      if params[:type].present? && available_shop_item_types.include?(params[:type])
+        @shop_item = params[:type].constantize.new
+      else
+        @shop_item = ShopItem.new
+      end
       if shop_manager?
         @shop_item.draft = true
         @shop_item.enabled = false
@@ -47,11 +51,6 @@ module Admin
       p = shop_manager? ? draft_shop_item_params : shop_item_params
 
       if @shop_item.update(p)
-        if @shop_item.saved_change_to_ticket_cost?
-          @shop_item.old_prices << @shop_item.ticket_cost_before_last_save
-          @shop_item.save
-        end
-
         if @shop_item.saved_change_to_blocked_countries?
           PaperTrail::Version.create!(
             item_type: "ShopItem",
@@ -223,9 +222,9 @@ module Admin
         :requires_verification_call,
         :mission_prize_only,
         requires_achievement: [],
-        attached_shop_item_ids: [],
         blocked_countries: [],
-        unlocking_mission_ids: []
+        unlocking_mission_ids: [],
+        parent_item_ids: []
       )
     end
 

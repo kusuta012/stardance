@@ -4,7 +4,6 @@
 #
 #  id                                 :bigint           not null, primary key
 #  aasm_state                         :string
-#  accessory_ids                      :bigint           default([]), is an Array
 #  awaiting_periodical_fulfillment_at :datetime
 #  external_ref                       :string
 #  frozen_address_ciphertext          :text

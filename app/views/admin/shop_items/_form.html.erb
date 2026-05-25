@@ -17,8 +17,30 @@
           <h3>Basic Information</h3>
 
           <div class="shop-item-form__field">
-            <%= f.label :type, class: "shop-item-form__label" %>
-            <%= f.select :type, @shop_item_types, { include_blank: "Select a type" }, { class: "form-control", id: "shop_item_type" } %>
+            <label class="shop-item-form__label">Type</label>
+            <% if shop_item.persisted? %>
+              <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <code><%= shop_item.type %></code>
+                <details style="position: relative;">
+                  <summary class="btn-secondary" style="cursor: pointer; font-size: 0.8rem; padding: 2px 8px;">Convert…</summary>
+                  <div style="position: absolute; z-index: 10; background: var(--color-tan-400); border: 1px solid var(--color-brown-500); border-radius: 0.5rem; padding: 0.75rem; margin-top: 0.25rem; min-width: 280px;">
+                    <%= form_with url: admin_shop_item_path(shop_item), method: :patch, scope: :shop_item, local: true do |cf| %>
+                      <%= cf.select :type, @shop_item_types, {}, { class: "form-control", style: "margin-bottom: 0.5rem;" } %>
+                      <%= cf.submit "Convert type", class: "btn-primary", style: "width: 100%;" %>
+                    <% end %>
+                  </div>
+                </details>
+              </div>
+            <% elsif shop_item.type.present? %>
+              <%= f.hidden_field :type, value: shop_item.type %>
+              <code><%= shop_item.type %></code>
+            <% else %>
+              <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                <% @shop_item_types.each do |type_name| %>
+                  <%= link_to type_name.demodulize.titleize, new_admin_shop_item_path(type: type_name), class: "btn-secondary", style: "text-align: center; text-decoration: none; padding: 0.4rem 0.75rem;" %>
+                <% end %>
+              </div>
+            <% end %>
           </div>
 
           <div class="shop-item-form__field">
@@ -249,79 +271,89 @@
 
         </div>
 
-        <div class="card" id="hack_clubber_settings" style="display: none;">
-          <h3>Hack Clubber Settings</h3>
-          <div class="shop-item-form__field">
-            <%= f.label :user_id, "Seller (User ID)", class: "shop-item-form__label" %>
-            <%= f.number_field :user_id, class: "form-control", placeholder: "User ID" %>
-            <span class="shop-item-form__hint">The ID of the Hack Clubber selling this item</span>
-          </div>
-          <div class="shop-item-form__field">
-            <%= f.label :payout_percentage, "Payout Percentage (%)", class: "shop-item-form__label" %>
-            <%= f.number_field :payout_percentage, min: 0, max: 100, class: "form-control" %>
-            <span class="shop-item-form__hint">Percentage of the sale price that goes to the seller</span>
-          </div>
-        </div>
-
-        <div class="card" id="hcb_locks_settings" style="display: none;">
-          <h3>HCB Locks</h3>
-          <div class="shop-item-form__field">
-            <%= f.label :hcb_merchant_lock, "HCB Merchant Lock", class: "shop-item-form__label" %>
-            <%= f.text_field :hcb_merchant_lock, class: "form-control" %>
-          </div>
-          <div class="shop-item-form__field">
-            <%= f.label :hcb_category_lock, "HCB Category Lock", class: "shop-item-form__label" %>
-            <%= f.text_field :hcb_category_lock, class: "form-control" %>
-          </div>
-          <div class="shop-item-form__field">
-            <%= f.label :hcb_keyword_lock, "HCB Keyword Lock", class: "shop-item-form__label" %>
-            <%= f.text_field :hcb_keyword_lock, class: "form-control" %>
-          </div>
-
-          <div class="shop-item-form__toggles" style="margin-top: 1rem;">
-            <label class="shop-item-form__toggle">
-              <%= f.check_box :hcb_one_time_use %>
-              <span class="shop-item-form__toggle-content">
-                <strong>One-Time Use</strong>
-                <span class="shop-item-form__toggle-desc">freeze card after one txn</span>
-              </span>
-            </label>
-          </div>
-        </div>
-
-        <div class="card" id="hcb_preauth_settings" style="display: none;">
-          <h3>HCB Preauthorization</h3>
-          <div class="shop-item-form__field">
-            <%= f.label :hcb_preauthorization_instructions, "Preauthorization Instructions", class: "shop-item-form__label" %>
-            <%= f.text_area :hcb_preauthorization_instructions, rows: 3, class: "form-control", placeholder: "Instructions for preauthorized HCB grants" %>
-            <span class="shop-item-form__hint">Used by HCB Preauth Grant items to provide spending instructions</span>
-          </div>
-        </div>
-
-        <div class="card" id="warehouse_settings" style="display: none;">
-          <h3>Warehouse Settings</h3>
-          <div class="shop-item-form__field">
-            <%= f.label :agh_contents, "AGH Contents (JSON)", class: "shop-item-form__label" %>
-            <%= f.text_area :agh_contents, rows: 4, id: "shop_item_agh_contents", class: "form-control shop-item-form__code", placeholder: '[{"sku": "ITEM-001", "quantity": 1}]', value: shop_item.agh_contents.present? ? JSON.pretty_generate(shop_item.agh_contents) : '' %>
-            <span class="shop-item-form__hint">List SKUs to include. Quantity selected by user will batch all SKUs together.</span>
-            <div class="alert alert-warning" style="margin-top: 0.5rem;">
-              <strong>Required:</strong> This field must contain valid JSON (not Ruby hash syntax).
-              Use double quotes for keys and strings. <a href="https://github.com/hackclub/stardance/issues/1172" target="_blank" rel="noopener">See issue #1172 for more info</a>.
+        <% if shop_item.type == "ShopItem::HackClubberItem" %>
+          <div class="card">
+            <h3>Hack Clubber Settings</h3>
+            <div class="shop-item-form__field">
+              <%= f.label :user_id, "Seller (User ID)", class: "shop-item-form__label" %>
+              <%= f.number_field :user_id, class: "form-control", placeholder: "User ID" %>
+              <span class="shop-item-form__hint">The ID of the Hack Clubber selling this item</span>
+            </div>
+            <div class="shop-item-form__field">
+              <%= f.label :payout_percentage, "Payout Percentage (%)", class: "shop-item-form__label" %>
+              <%= f.number_field :payout_percentage, min: 0, max: 100, class: "form-control" %>
+              <span class="shop-item-form__hint">Percentage of the sale price that goes to the seller</span>
             </div>
           </div>
-        </div>
+        <% end %>
 
-        <div class="card" id="source_region_settings" style="display: none;">
-          <h3>Source Region</h3>
-          <div class="shop-item-form__field">
-            <%= f.label :source_region, "Source Region", class: "shop-item-form__label" %>
-            <%= f.select :source_region,
-              [["None (use default behavior)", ""]] + Shop::Regionalizable::REGIONS.map { |code, config| [config[:name], code] },
-              {},
-              { class: "form-control" } %>
-            <span class="shop-item-form__hint">If you set this, people will get a scary warning if the selected address is outside this region.</span>
+        <% if shop_item.type.in?(%w[ShopItem::HCBGrant ShopItem::HCBPreauthGrant]) %>
+          <div class="card">
+            <h3>HCB Locks</h3>
+            <div class="shop-item-form__field">
+              <%= f.label :hcb_merchant_lock, "HCB Merchant Lock", class: "shop-item-form__label" %>
+              <%= f.text_field :hcb_merchant_lock, class: "form-control" %>
+            </div>
+            <div class="shop-item-form__field">
+              <%= f.label :hcb_category_lock, "HCB Category Lock", class: "shop-item-form__label" %>
+              <%= f.text_field :hcb_category_lock, class: "form-control" %>
+            </div>
+            <div class="shop-item-form__field">
+              <%= f.label :hcb_keyword_lock, "HCB Keyword Lock", class: "shop-item-form__label" %>
+              <%= f.text_field :hcb_keyword_lock, class: "form-control" %>
+            </div>
+
+            <div class="shop-item-form__toggles" style="margin-top: 1rem;">
+              <label class="shop-item-form__toggle">
+                <%= f.check_box :hcb_one_time_use %>
+                <span class="shop-item-form__toggle-content">
+                  <strong>One-Time Use</strong>
+                  <span class="shop-item-form__toggle-desc">freeze card after one txn</span>
+                </span>
+              </label>
+            </div>
           </div>
-        </div>
+        <% end %>
+
+        <% if shop_item.type == "ShopItem::HCBPreauthGrant" %>
+          <div class="card">
+            <h3>HCB Preauthorization</h3>
+            <div class="shop-item-form__field">
+              <%= f.label :hcb_preauthorization_instructions, "Preauthorization Instructions", class: "shop-item-form__label" %>
+              <%= f.text_area :hcb_preauthorization_instructions, rows: 3, class: "form-control", placeholder: "Instructions for preauthorized HCB grants" %>
+              <span class="shop-item-form__hint">Used by HCB Preauth Grant items to provide spending instructions</span>
+            </div>
+          </div>
+        <% end %>
+
+        <% if shop_item.type.in?(%w[ShopItem::WarehouseItem ShopItem::PileOfStickersItem]) %>
+          <div class="card">
+            <h3>Warehouse Settings</h3>
+            <div class="shop-item-form__field">
+              <%= f.label :agh_contents, "AGH Contents (JSON)", class: "shop-item-form__label" %>
+              <%= f.text_area :agh_contents, rows: 4, id: "shop_item_agh_contents", class: "form-control shop-item-form__code", placeholder: '[{"sku": "ITEM-001", "quantity": 1}]', value: shop_item.agh_contents.present? ? JSON.pretty_generate(shop_item.agh_contents) : '' %>
+              <span class="shop-item-form__hint">List SKUs to include. Quantity selected by user will batch all SKUs together.</span>
+              <div class="alert alert-warning" style="margin-top: 0.5rem;">
+                <strong>Required:</strong> This field must contain valid JSON (not Ruby hash syntax).
+                Use double quotes for keys and strings. <a href="https://github.com/hackclub/stardance/issues/1172" target="_blank" rel="noopener">See issue #1172 for more info</a>.
+              </div>
+            </div>
+          </div>
+        <% end %>
+
+        <% if shop_item.type.in?(%w[ShopItem::HackClubberItem ShopItem::ThirdPartyDigital ShopItem::HQMailItem]) %>
+          <div class="card">
+            <h3>Source Region</h3>
+            <div class="shop-item-form__field">
+              <%= f.label :source_region, "Source Region", class: "shop-item-form__label" %>
+              <%= f.select :source_region,
+                [["None (use default behavior)", ""]] + Shop::Regionalizable::REGIONS.map { |code, config| [config[:name], code] },
+                {},
+                { class: "form-control" } %>
+              <span class="shop-item-form__hint">If you set this, people will get a scary warning if the selected address is outside this region.</span>
+            </div>
+          </div>
+        <% end %>
 
         <div class="card">
           <h3>Country Blacklist</h3>
@@ -335,39 +367,42 @@
           </div>
         </div>
 
-        <div class="card" id="accessory_settings" style="display: none;">
-          <h3>Accessory Settings</h3>
-          <label class="shop-item-form__checkbox">
-            <%= f.check_box :buyable_by_self, id: "shop_item_buyable_by_self" %>
-            <span>Buyable By Self</span>
-          </label>
-          <span class="shop-item-form__hint">If unchecked, this accessory can only be purchased with an attached item</span>
+        <% if shop_item.type == "ShopItem::Accessory" %>
+          <div class="card">
+            <h3>Accessory Settings</h3>
+            <label class="shop-item-form__checkbox">
+              <%= f.check_box :buyable_by_self, id: "shop_item_buyable_by_self" %>
+              <span>Buyable By Self</span>
+            </label>
+            <span class="shop-item-form__hint">If unchecked, this accessory can only be purchased with an attached item</span>
 
-          <div class="shop-item-form__field" style="margin-top: 1rem;">
-            <%= f.label :accessory_tag, "Accessory Tag", class: "shop-item-form__label" %>
-            <%= f.text_field :accessory_tag, class: "form-control", placeholder: "e.g., color_item, ram_type" %>
-            <span class="shop-item-form__hint">Accessories with the same tag are mutually exclusive (only one can be selected)</span>
-          </div>
-
-          <label class="shop-item-form__checkbox" style="margin-top: 1rem;">
-            <%= f.check_box :show_image_in_shop, id: "shop_item_show_image_in_shop" %>
-            <span>Show Image in Shop</span>
-          </label>
-          <span class="shop-item-form__hint">Display this accessory's image on the order page</span>
-
-          <div class="shop-item-form__field">
-            <%= f.label :attached_shop_item_ids, "Attached To (Shop Items)", class: "shop-item-form__label" %>
-            <div class="shop-item-form__checkbox-list">
-              <%= f.collection_check_boxes :attached_shop_item_ids, ShopItem.where.not(type: "ShopItem::Accessory").order(:name), :id, :name do |b| %>
-                <label class="shop-item-form__checkbox">
-                  <%= b.check_box %>
-                  <span><%= b.text %></span>
-                </label>
-              <% end %>
+            <div class="shop-item-form__field" style="margin-top: 1rem;">
+              <%= f.label :accessory_tag, "Accessory Tag", class: "shop-item-form__label" %>
+              <%= f.text_field :accessory_tag, class: "form-control", placeholder: "e.g., color_item, ram_type" %>
+              <span class="shop-item-form__hint">Accessories with the same tag are mutually exclusive (only one can be selected)</span>
             </div>
-            <span class="shop-item-form__hint">Select items this accessory can be attached to</span>
+
+            <label class="shop-item-form__checkbox" style="margin-top: 1rem;">
+              <%= f.check_box :show_image_in_shop, id: "shop_item_show_image_in_shop" %>
+              <span>Show Image in Shop</span>
+            </label>
+            <span class="shop-item-form__hint">Display this accessory's image on the order page</span>
+
+            <div class="shop-item-form__field">
+              <label class="shop-item-form__label">Attached To (Shop Items)</label>
+              <div class="shop-item-form__checkbox-list">
+                <% current_parent_ids = shop_item.persisted? ? shop_item.shop_item_attachments.where.not(parent_item_id: nil).pluck(:parent_item_id) : [] %>
+                <% ShopItem.where.not(type: "ShopItem::Accessory").order(:name).each do |item| %>
+                  <label class="shop-item-form__checkbox">
+                    <%= check_box_tag "shop_item[parent_item_ids][]", item.id, current_parent_ids.include?(item.id), id: "shop_item_parent_item_ids_#{item.id}" %>
+                    <span><%= item.name %></span>
+                  </label>
+                <% end %>
+              </div>
+              <span class="shop-item-form__hint">Select items this accessory can be attached to</span>
+            </div>
           </div>
-        </div>
+        <% end %>
       </div>
 
       <div class="shop-item-form__sidebar">
@@ -970,53 +1005,9 @@
         autoFillTicketCost();
         updateAllRegionalPricing();
 
-        const typeSelect = document.getElementById('shop_item_type');
-        const hackClubberSettings = document.getElementById('hack_clubber_settings');
-        const hcbLocksSettings = document.getElementById('hcb_locks_settings');
-        const hcbPreauthSettings = document.getElementById('hcb_preauth_settings');
-        const warehouseSettings = document.getElementById('warehouse_settings');
-        const accessorySettings = document.getElementById('accessory_settings');
-        const sourceSettings = document.getElementById('source_region_settings');
-        const aghContentsField = document.getElementById('shop_item_agh_contents');
-
-        const SOURCE_REGION_TYPES = ['ShopItem::HackClubberItem', 'ShopItem::ThirdPartyDigital', 'ShopItem::HQMailItem'];
-        // we can add more later, but for now, just these three
-
-        function updateTypeVisibility() {
-            const selectedType = typeSelect ? typeSelect.value : '';
-
-            if (hackClubberSettings) {
-                hackClubberSettings.style.display = (selectedType === 'ShopItem::HackClubberItem') ? 'block' : 'none';
-            }
-
-            if (hcbLocksSettings) {
-                hcbLocksSettings.style.display = (selectedType === 'ShopItem::HCBGrant' || selectedType === 'ShopItem::HCBPreauthGrant') ? 'block' : 'none';
-            }
-
-            if (hcbPreauthSettings) {
-                hcbPreauthSettings.style.display = (selectedType === 'ShopItem::HCBPreauthGrant') ? 'block' : 'none';
-            }
-
-            if (warehouseSettings) {
-                warehouseSettings.style.display = (selectedType === 'ShopItem::WarehouseItem' || selectedType === 'ShopItem::PileOfStickersItem') ? 'block' : 'none';
-            }
-
-            if (aghContentsField) {
-                aghContentsField.required = (selectedType === 'ShopItem::WarehouseItem');
-            }
-
-            if (accessorySettings) {
-                accessorySettings.style.display = (selectedType === 'ShopItem::Accessory') ? 'block' : 'none';
-            }
-
-            if (sourceSettings) {
-                sourceSettings.style.display = SOURCE_REGION_TYPES.includes(selectedType) ? 'block' : 'none';
-            }
-        }
-
-        if (typeSelect) {
-            typeSelect.addEventListener('change', updateTypeVisibility);
-            updateTypeVisibility();
+        var aghContentsField = document.getElementById('shop_item_agh_contents');
+        if (aghContentsField) {
+            aghContentsField.required = (<%= (shop_item.type == "ShopItem::WarehouseItem").to_json %>);
         }
     })();
 </script>

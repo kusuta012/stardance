@@ -5,7 +5,6 @@
 #  id                                :bigint           not null, primary key
 #  accessory_tag                     :string
 #  agh_contents                      :jsonb
-#  attached_shop_item_ids            :bigint           default([]), is an Array
 #  blocked_countries                 :string           default([]), is an Array
 #  buyable_by_self                   :boolean          default(TRUE)
 #  default_assigned_user_id_au       :bigint
@@ -38,7 +37,6 @@
 #  max_qty                           :integer
 #  mission_prize_only                :boolean          default(FALSE), not null
 #  name                              :string
-#  old_prices                        :integer          default([]), is an Array
 #  one_per_person_ever               :boolean
 #  past_purchases                    :integer          default(0)
 #  payout_percentage                 :integer          default(0)
