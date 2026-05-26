@@ -201,8 +201,6 @@ class ApplicationController < ActionController::Base
     identity_payload = HCAService.identity(identity.access_token)
     return if identity_payload.blank?
 
-    latest_status = identity_payload["verification_status"].to_s
-    current_user.complete_tutorial_step!(:identity_verified) if %w[pending verified].include?(latest_status)
     current_user.apply_hca_verification_payload!(identity_payload)
   rescue StandardError => e
     Rails.logger.warn("Portal return identity refresh failed: #{e.class}: #{e.message}")

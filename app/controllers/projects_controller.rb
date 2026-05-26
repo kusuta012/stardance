@@ -192,7 +192,6 @@ class ProjectsController < ApplicationController
 
     if success
       flash[:notice] = "Project created successfully"
-      current_user.complete_tutorial_step! :create_project
 
       project_hours = @project.total_hackatime_hours
 
@@ -283,7 +282,6 @@ class ProjectsController < ApplicationController
       end
 
       @project.soft_delete!(force: force)
-      current_user.revoke_tutorial_step! :create_project if current_user.projects.empty?
       flash[:notice] = "Project deleted successfully"
       redirect_to projects_user_path(current_user)
     rescue ActiveRecord::RecordInvalid => e

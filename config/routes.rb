@@ -538,12 +538,6 @@ Rails.application.routes.draw do
     end
   end
 
-  namespace :user, path: "" do
-    resources :tutorial_steps, only: [ :show ] do
-      resource :completion, only: [ :create ], module: :tutorial_steps
-    end
-  end
-
   namespace :onboarding do
     post :start,                     to: "wizard#start"
     get  :welcome,                   to: "wizard#welcome"

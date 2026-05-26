@@ -16,7 +16,6 @@ class IdentitiesController < ApplicationController
     identity.uid = uid
     identity.access_token = access_token if access_token.present?
     identity.save!
-    current_user.complete_tutorial_step! :setup_hackatime
 
     result = current_user.try_sync_hackatime_data!(force: true)
     total_seconds = result&.dig(:projects)&.values&.sum || 0
