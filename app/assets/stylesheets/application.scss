@@ -50,8 +50,6 @@
 @use "pages/shop/shop";
 @use "pages/shop/order";
 @use "pages/shop/my_orders";
-@use "pages/votes/new" as votes_new;
-@use "pages/votes/index" as votes_index;
 @use "pages/user/show" as users_show;
 @use "pages/errors/not_authorized";
 @use "pages/guides";
