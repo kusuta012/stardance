@@ -5,10 +5,10 @@ class Admin::DevlogReviewsController < Admin::ApplicationController
     authorize :admin, :access_reviews?
 
     # Log only non-sensitive params for debugging
-    Rails.logger.debug "DevlogReview ##{@devlog_review.id} update params: status=#{devlog_review_params[:status]}, approved_minutes=#{devlog_review_params[:approved_minutes]}"
+    Rails.logger.debug "Certification::Devlog ##{@devlog_review.id} update params: status=#{devlog_review_params[:status]}, approved_minutes=#{devlog_review_params[:approved_minutes]}"
 
     if @devlog_review.update(devlog_review_params)
-      Rails.logger.debug "DevlogReview ##{@devlog_review.id} successfully updated: status=#{@devlog_review.status}, approved_minutes=#{@devlog_review.approved_minutes}"
+      Rails.logger.debug "Certification::Devlog ##{@devlog_review.id} successfully updated: status=#{@devlog_review.status}, approved_minutes=#{@devlog_review.approved_minutes}"
 
       render json: {
         success: true,
@@ -20,7 +20,7 @@ class Admin::DevlogReviewsController < Admin::ApplicationController
         }
       }
     else
-      Rails.logger.debug "DevlogReview ##{@devlog_review.id} update failed: #{@devlog_review.errors.full_messages.join(', ')}"
+      Rails.logger.debug "Certification::Devlog ##{@devlog_review.id} update failed: #{@devlog_review.errors.full_messages.join(', ')}"
 
       render json: {
         success: false,
@@ -32,7 +32,7 @@ class Admin::DevlogReviewsController < Admin::ApplicationController
   private
 
   def set_devlog_review
-    @devlog_review = DevlogReview.find(params[:id])
+    @devlog_review = Certification::Devlog.find(params[:id])
   end
 
   def devlog_review_params

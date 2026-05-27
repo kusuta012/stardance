@@ -3,7 +3,7 @@ module Admin
     def index
       authorize :admin, :access_reviews?
 
-      @reviews = YswsReview
+      @reviews = Certification::Ysws
         .where(reviewed_at: nil)
         .includes(:project, :user)
         .order(created_at: :asc)
@@ -12,7 +12,7 @@ module Admin
     def show
       authorize :admin, :access_reviews?
 
-      @review = YswsReview
+      @review = Certification::Ysws
         .includes(:project, :user, :reviewer, devlog_reviews: { post_devlog: :attachments_attachments })
         .find(params[:id])
 
@@ -30,7 +30,7 @@ module Admin
     def report_fraud
       authorize :admin, :access_reviews?
 
-      @review = YswsReview.find(params[:id])
+      @review = Certification::Ysws.find(params[:id])
 
       report = Project::Report.new(
         project_id: @review.project_id,

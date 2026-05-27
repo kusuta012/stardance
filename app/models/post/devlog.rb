@@ -23,7 +23,7 @@
 #
 # Foreign Keys
 #
-#  fk_rails_...  (devlog_review_id => devlog_reviews.id)
+#  fk_rails_...  (devlog_review_id => certification_devlog_reviews.id)
 #
 class Post::Devlog < ApplicationRecord
   include Postable
@@ -40,7 +40,7 @@ class Post::Devlog < ApplicationRecord
   has_many :versions, class_name: "DevlogVersion", foreign_key: :devlog_id, dependent: :destroy
 
   # Review association
-  has_one :devlog_review, foreign_key: :post_devlog_id, dependent: :destroy
+  has_one :devlog_review, class_name: "Certification::Devlog", foreign_key: :post_devlog_id, dependent: :destroy
 
   ACCEPTED_CONTENT_TYPES = %w[
     image/jpeg

@@ -23,7 +23,7 @@
 #
 # Foreign Keys
 #
-#  fk_rails_...  (devlog_review_id => devlog_reviews.id)
+#  fk_rails_...  (devlog_review_id => certification_devlog_reviews.id)
 #
 require "test_helper"
 

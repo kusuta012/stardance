@@ -126,7 +126,7 @@ class Projects::ShipsController < ApplicationController
       hours_worked = ship_event.hours || 0
       original_minutes = (hours_worked * 60).to_i
 
-      YswsReview.create!(
+      Certification::Ysws.create!(
         user: current_user,
         project: @project,
         post_ship_event: ship_event,

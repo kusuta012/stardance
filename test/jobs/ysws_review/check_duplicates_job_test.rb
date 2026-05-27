@@ -1,6 +1,6 @@
 require "test_helper"
 
-class YswsReview::CheckDuplicatesJobTest < ActiveJob::TestCase
+class Certification::CheckDuplicatesJobTest < ActiveJob::TestCase
   # test "the truth" do
   #   assert true
   # end
