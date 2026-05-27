@@ -14,21 +14,18 @@
 #  tutorial                        :boolean          default(FALSE), not null
 #  created_at                      :datetime         not null
 #  updated_at                      :datetime         not null
-#  devlog_review_id                :bigint
 #
 # Indexes
 #
-#  index_post_devlogs_on_deleted_at        (deleted_at)
-#  index_post_devlogs_on_devlog_review_id  (devlog_review_id)
-#
-# Foreign Keys
-#
-#  fk_rails_...  (devlog_review_id => certification_devlog_reviews.id)
+#  index_post_devlogs_on_deleted_at  (deleted_at)
 #
 class Post::Devlog < ApplicationRecord
   include Postable
   include SoftDeletable
   has_paper_trail ignore: [ :likes_count, :comments_count, :hackatime_pulled_at, :synced_at ]
+
+  # Ignore devlog_review_id column before removing it in migration
+  self.ignored_columns += ["devlog_review_id"]
 
   BODY_MAX_LENGTH = 4_000
   MAX_ATTACHMENTS = 4

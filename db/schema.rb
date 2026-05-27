@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_05_26_180903) do
+ActiveRecord::Schema[8.1].define(version: 2026_05_27_000001) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "vector"
@@ -455,7 +455,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_26_180903) do
     t.integer "comments_count", default: 0, null: false
     t.datetime "created_at", null: false
     t.datetime "deleted_at"
-    t.bigint "devlog_review_id"
     t.integer "duration_seconds"
     t.text "hackatime_projects_key_snapshot"
     t.datetime "hackatime_pulled_at"
@@ -464,7 +463,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_26_180903) do
     t.boolean "tutorial", default: false, null: false
     t.datetime "updated_at", null: false
     t.index ["deleted_at"], name: "index_post_devlogs_on_deleted_at"
-    t.index ["devlog_review_id"], name: "index_post_devlogs_on_devlog_review_id"
   end
 
   create_table "post_fire_events", force: :cascade do |t|
@@ -1077,7 +1075,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_26_180903) do
   add_foreign_key "mission_submissions", "post_ship_events", column: "ship_event_id"
   add_foreign_key "mission_submissions", "shop_orders"
   add_foreign_key "mission_submissions", "users", column: "reviewed_by_id"
-  add_foreign_key "post_devlogs", "certification_devlog_reviews", column: "devlog_review_id"
   add_foreign_key "posts", "projects"
   add_foreign_key "posts", "users"
   add_foreign_key "project_follows", "projects"

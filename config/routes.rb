@@ -414,7 +414,8 @@ class AdminConstraint
     # Allow admins, fraud dept, and fulfillment persons (who have limited access)
     policy.access_admin_endpoints? ||
       policy.access_fulfillment_view? ||
-      (request.path == "/admin/flavortime_dashboard" && policy.access_flavortime_dashboard?)
+      (request.path == "/admin/flavortime_dashboard" && policy.access_flavortime_dashboard?) ||
+      (request.path.start_with?("/admin/review") && policy.access_reviews?)
   end
 
   def self.admin_user_for(request)
@@ -717,9 +718,9 @@ Rails.application.routes.draw do
       end
     end
 
-    get "review", to: "reviews#index"
-    get "review/:id", to: "reviews#show", as: "review_detail"
-    post "review/:id/report_fraud", to: "reviews#report_fraud", as: "review_report_fraud"
+    get "review", to: "/certification/ysws#index", as: "reviews"
+    get "review/:id", to: "/certification/ysws#show", as: "review_detail"
+    post "review/:id/report_fraud", to: "/certification/ysws#report_fraud", as: "review_report_fraud"
 
     resources :devlog_reviews, only: [ :update ]
   end

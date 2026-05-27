@@ -1,4 +1,4 @@
-module Admin::ReviewsHelper
+module Certification::YswsHelper
   # Parse repo_url to extract platform and username information
   # Returns a hash with :platform, :platform_name, :username, and :icon
   # Example: { platform: "github", platform_name: "GitHub", username: "hackclub", icon: "github" }
@@ -24,10 +24,11 @@ module Admin::ReviewsHelper
   # Fetch platform contribution stats for a user
   # Returns formatted string for display or nil if unavailable
   # Example: "31 contributions" or "org repo"
-  def fetch_platform_contributions(platform, username)
+  # If contribution_data is provided, uses that instead of fetching
+  def fetch_platform_contributions(platform, username, contribution_data = nil)
     return nil if platform.blank? || username.blank?
 
-    result = Admin::ReviewPlatformService.fetch_contributions(platform, username)
+    result = contribution_data || Admin::ReviewPlatformService.fetch_contributions(platform, username)
 
     if result[:error]
       case result[:error]
@@ -45,10 +46,11 @@ module Admin::ReviewsHelper
 
   # Fetch raw contribution count for a user
   # Returns integer count or nil if unavailable
-  def fetch_contribution_count(platform, username)
+  # If contribution_data is provided, uses that instead of fetching
+  def fetch_contribution_count(platform, username, contribution_data = nil)
     return nil if platform.blank? || username.blank?
 
-    result = Admin::ReviewPlatformService.fetch_contributions(platform, username)
+    result = contribution_data || Admin::ReviewPlatformService.fetch_contributions(platform, username)
 
     if result[:error]
       nil
@@ -82,10 +84,11 @@ module Admin::ReviewsHelper
   # Prepare calendar data for GitHub-style contribution visualization
   # Returns array of day objects with date, count, and level for the last 365 days
   # Example: [{ date: "2024-01-01", count: 5, level: 1, day_of_week: 1, week_index: 0 }, ...]
-  def prepare_contribution_calendar_data(platform, username)
+  # If contribution_data is provided, uses that instead of fetching
+  def prepare_contribution_calendar_data(platform, username, contribution_data = nil)
     return nil if platform.blank? || username.blank?
 
-    result = Admin::ReviewPlatformService.fetch_contributions(platform, username)
+    result = contribution_data || Admin::ReviewPlatformService.fetch_contributions(platform, username)
     return nil if result[:error] || result[:contributions].blank?
 
     # Create a hash map of contributions by date for quick lookup

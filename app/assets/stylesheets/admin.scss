@@ -120,22 +120,22 @@ body {
 
 .btn-primary {
   @extend %btn-base;
-  background: var(--color-brown-500);
-  color: white;
+  background: var(--color-brand-blue);
+  color: var(--color-set-1-bg);
 
   &:hover {
-    background: var(--color-brown-400);
+    background: var(--color-brand-lilac);
     box-shadow: var(--shadow);
   }
 }
 
 .btn-primary-dark {
   @extend %btn-base;
-  background: var(--color-brown-700);
+  background: var(--color-space-surface-strong);
   color: white;
 
   &:hover {
-    background: var(--color-brown-600);
+    background: var(--color-space-surface);
     box-shadow: var(--shadow);
   }
 }
@@ -811,11 +811,11 @@ dialog {
   }
 
   &--primary {
-    background: var(--color-brown-500);
-    color: white;
+    background: var(--color-brand-blue);
+    color: var(--color-set-1-bg);
 
     &:hover {
-      background: var(--color-brown-400);
+      background: var(--color-brand-lilac);
       box-shadow: var(--shadow);
     }
   }

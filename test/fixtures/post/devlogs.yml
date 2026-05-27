@@ -16,16 +16,10 @@
 #  tutorial                        :boolean          default(FALSE), not null
 #  created_at                      :datetime         not null
 #  updated_at                      :datetime         not null
-#  devlog_review_id                :bigint
 #
 # Indexes
 #
-#  index_post_devlogs_on_deleted_at        (deleted_at)
-#  index_post_devlogs_on_devlog_review_id  (devlog_review_id)
-#
-# Foreign Keys
-#
-#  fk_rails_...  (devlog_review_id => certification_devlog_reviews.id)
+#  index_post_devlogs_on_deleted_at  (deleted_at)
 #
 one:
   body: MyString

@@ -85,7 +85,13 @@ export default class extends Controller {
 
   // Approve the devlog
   approve() {
-    const minutes = parseInt(this.minutesInputTarget.value);
+    const minutes = parseInt(this.minutesInputTarget.value, 10);
+
+    // Validate numeric input
+    if (Number.isNaN(minutes)) {
+      alert("Please enter a valid number for minutes");
+      return;
+    }
 
     if (minutes < 0) {
       alert("Cannot approve with negative minutes");

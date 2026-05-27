@@ -46,10 +46,10 @@ module Certification
       numericality: { greater_than_or_equal_to: 0 },
       if: :approved?
 
-    # When rejected, approved_minutes should be 0
+    # When rejected, approved_minutes must be 0 (not nil)
     validates :approved_minutes,
+      presence: true,
       numericality: { equal_to: 0 },
-      allow_nil: true,
       if: :rejected?
 
     # State transition methods

@@ -1,5 +1,5 @@
-module Admin
-  class ReviewsController < Admin::ApplicationController
+module Certification
+  class YswsController < Admin::ApplicationController
     def index
       authorize :admin, :access_reviews?
 
@@ -25,6 +25,14 @@ module Admin
         max_minutes: devlog_minutes.max || 0,
         one_hour_plus_count: devlog_minutes.count { |m| m >= 60 }
       }
+
+      # Fetch platform contributions once to avoid multiple API calls
+      @repo_info = helpers.parse_repo_info(@review.project.repo_url)
+      if @repo_info
+        platform = @repo_info[:platform]
+        username = @repo_info[:username]
+        @contribution_data = Admin::ReviewPlatformService.fetch_contributions(platform, username)
+      end
     end
 
     def report_fraud

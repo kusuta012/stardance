@@ -3,7 +3,7 @@
 <main class="admin-ysws-reviews" role="main" data-controller="review-sidebar fraud-report media-viewer" data-fraud-report-review-id-value="<%= @review.id %>">
   <!-- Header Section -->
   <div class="review-detail-header">
-    <%= link_to "← back", "/admin/review", class: "btn-back", "aria-label": "Back to review queue" %>
+    <%= link_to "← back", admin_reviews_path, class: "btn-back", "aria-label": "Back to review queue" %>
 
     <div class="header-content">
       <div class="header-left">
@@ -22,18 +22,17 @@
       </div>
 
       <div class="header-actions">
-        <% repo_info = parse_repo_info(@review.project.repo_url) %>
-        <% if repo_info %>
+        <% if @repo_info %>
           <div class="repo-platform-card">
-            <% contributions = fetch_platform_contributions(repo_info[:platform], repo_info[:username]) %>
-            <% contribution_count = fetch_contribution_count(repo_info[:platform], repo_info[:username]) %>
+            <% contributions = fetch_platform_contributions(@repo_info[:platform], @repo_info[:username], @contribution_data) %>
+            <% contribution_count = fetch_contribution_count(@repo_info[:platform], @repo_info[:username], @contribution_data) %>
             <% skill_level = contribution_skill_level(contribution_count) %>
             <div class="platform-header">
-              <% profile_url = platform_profile_url(repo_info[:platform], repo_info[:username]) %>
+              <% profile_url = platform_profile_url(@repo_info[:platform], @repo_info[:username]) %>
               <% if profile_url %>
-                <%= link_to "@#{repo_info[:username]}", profile_url, class: "platform-username", target: "_blank", rel: "noopener noreferrer" %>
+                <%= link_to "@#{@repo_info[:username]}", profile_url, class: "platform-username", target: "_blank", rel: "noopener noreferrer" %>
               <% else %>
-                <span class="platform-username">@<%= repo_info[:username] %></span>
+                <span class="platform-username">@<%= @repo_info[:username] %></span>
               <% end %>
               <% if contributions %>
                 <span class="contribution-count">• <%= contributions %></span>
@@ -42,7 +41,7 @@
                 <span class="skill-level-badge <%= skill_level[:class] %>"><%= skill_level[:label] %></span>
               <% end %>
             </div>
-            <% calendar_data = prepare_contribution_calendar_data(repo_info[:platform], repo_info[:username]) %>
+            <% calendar_data = prepare_contribution_calendar_data(@repo_info[:platform], @repo_info[:username], @contribution_data) %>
             <% if calendar_data %>
               <div class="contribution-calendar"
                    data-controller="github-calendar"
