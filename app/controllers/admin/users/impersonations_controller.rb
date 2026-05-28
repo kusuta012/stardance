@@ -9,6 +9,7 @@ class Admin::Users::ImpersonationsController < Admin::ApplicationController
     session[:impersonator_user_id] = admin_user.id
     session[:user_id] = @user.id
     pundit_reset!
+    authorize @user, :impersonate?
 
     ::PaperTrail::Version.create!(
       item_type: "User",
@@ -27,24 +28,28 @@ class Admin::Users::ImpersonationsController < Admin::ApplicationController
 
   def destroy
     authorize current_user, :stop_impersonating?
+    impersonated_user = current_user
+    admin_user = real_user
 
-    if real_user && current_user
+    if admin_user && impersonated_user
       ::PaperTrail::Version.create!(
         item_type: "User",
-        item_id: current_user.id,
+        item_id: impersonated_user.id,
         event: "impersonation_stopped",
-        whodunnit: real_user.id.to_s,
+        whodunnit: admin_user.id.to_s,
         object_changes: {
-          stopped_by: real_user.id,
-          stopped_by_name: real_user.display_name
+          stopped_by: admin_user.id,
+          stopped_by_name: admin_user.display_name
         }.to_json
       )
     end
 
-    session[:user_id] = real_user.id
+    session[:user_id] = admin_user.id
     session.delete(:impersonator_user_id)
+    @current_user = admin_user
     pundit_reset!
-    flash[:notice] = "Stopped impersonating #{current_user&.display_name}."
+    authorize admin_user, :stop_impersonating?
+    flash[:notice] = "Stopped impersonating #{impersonated_user&.display_name}."
 
     redirect_to admin_users_path
   end
