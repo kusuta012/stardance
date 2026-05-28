@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_05_27_233936) do
+ActiveRecord::Schema[8.1].define(version: 2026_05_28_132028) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "vector"
@@ -1013,7 +1013,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_27_233936) do
     t.string "verification_status", default: "needs_submission", null: false
     t.integer "vote_balance", default: 0, null: false
     t.integer "votes_count"
-    t.boolean "voting_locked", default: false, null: false
     t.boolean "ysws_eligible", default: false, null: false
     t.index "lower((email)::text)", name: "index_users_on_lower_email_unique", unique: true, where: "((email IS NOT NULL) AND ((email)::text <> ''::text))"
     t.index ["email"], name: "index_users_on_email"

@@ -612,7 +612,6 @@ Rails.application.routes.draw do
         post :trigger
       end
     end
-
   end
 
   # Mission management under /admin/ — the URL prefix is `admin`, but

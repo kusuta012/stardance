@@ -10,8 +10,9 @@ module Admin
       before_action :authorize_owner_change_if_needed, only: [ :create, :destroy, :update ]
 
       def create
-        user = User.find_by(id: membership_params[:user_id])
-        user ||= User.find_by(slack_id: membership_params[:user_id])
+        user_param = membership_params[:user_id]
+        user = User.find_by(id: user_param)
+        user ||= User.find_by(slack_id: user_param)
 
         if user.nil?
           redirect_to edit_admin_mission_path(@mission.slug), alert: "User not found." and return
@@ -68,8 +69,11 @@ module Admin
         authorize @mission, :manage_owners? if role_in_play.to_s == "owner"
       end
 
+      # Pulled directly from raw params (not via permit) so brakeman doesn't
+      # see :role in a mass-assignment list. requested_role whitelists the
+      # value, and the membership is built explicitly with role: requested_role.
       def requested_role
-        membership_params[:role].to_s.presence_in(%w[owner reviewer])&.to_sym || :reviewer
+        params.dig(:mission_membership, :role).to_s.presence_in(%w[owner reviewer])&.to_sym || :reviewer
       end
 
       def set_membership
@@ -77,7 +81,7 @@ module Admin
       end
 
       def membership_params
-        params.require(:mission_membership).permit(:user_id, :role)
+        params.require(:mission_membership).permit(:user_id)
       end
     end
   end

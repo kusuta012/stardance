@@ -7,8 +7,6 @@ module Admin
     # to keep PaperTrail whodunnit + impersonation guards, but skip the
     # strict admin gate and replace it with the per-mission manage policy.
     class BaseController < Admin::ApplicationController
-      skip_before_action :authenticate_admin
-
       before_action :set_mission
       before_action :authorize_mission_management
 
@@ -19,8 +17,10 @@ module Admin
         @mission = Mission.find_by!(slug: slug)
       end
 
+      # Plain (non-namespaced) MissionPolicy so non-admin mission owners can
+      # reach these admin-URL'd sub-resource controllers.
       def authorize_mission_management
-        authorize @mission, :manage?
+        authorize @mission, :manage?, policy_class: MissionPolicy
       end
     end
   end

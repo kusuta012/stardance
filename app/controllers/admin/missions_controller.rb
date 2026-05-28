@@ -3,14 +3,8 @@ module Admin
     # Override the default tan kitchen layout from Admin::ApplicationController.
     layout "application"
 
-    # /admin/missions/:slug/edit (+ update) is shared with non-admin mission
-    # owners via MissionPolicy#manage? — skip the strict admin gate and rely
-    # on per-mission Pundit authorization. Other actions stay admin-only.
-    skip_before_action :authenticate_admin, only: [ :edit, :update ]
-
     before_action :set_body_class
     before_action :set_mission, only: [ :show, :edit, :update, :destroy, :restore ]
-    before_action :authorize_mission_management, only: [ :edit, :update ]
 
     def index
       authorize Mission
@@ -64,10 +58,15 @@ module Admin
     end
 
     def edit
+      # /admin/missions/:slug/edit is shared with non-admin mission owners
+      # via MissionPolicy#manage? — use the plain (non-namespaced) policy so
+      # owners pass; the rest of the actions stay admin-only via Admin::MissionPolicy.
+      authorize @mission, :manage?, policy_class: MissionPolicy
       load_edit_locals
     end
 
     def update
+      authorize @mission, :manage?, policy_class: MissionPolicy
       if @mission.update(mission_params)
         redirect_to edit_admin_mission_path(@mission.slug), notice: "Mission updated."
       else
@@ -96,10 +95,6 @@ module Admin
 
     def set_mission
       @mission = Mission.with_deleted.find_by!(slug: params[:slug])
-    end
-
-    def authorize_mission_management
-      authorize @mission, :manage?
     end
 
     def load_edit_locals
