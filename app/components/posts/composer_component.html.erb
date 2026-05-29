@@ -27,7 +27,7 @@
           url: project_devlogs_path(selected_project),
           html: { multipart: true,
                   data: { composer_target: "form",
-                          action: "paste->composer#paste" } },
+                          action: "paste->composer#paste submit->composer#guardSubmit" } },
           class: "feed-composer__form",
           local: true do |f| %>
       <div class="feed-composer__scroll">
@@ -102,9 +102,14 @@
                 size: :small,
                 type: :submit,
                 disable_with: "Posting...",
-                disabled: true,
+                disabled: :soft,
                 class: "feed-composer__submit",
-                data: { composer_target: "submit" }
+                data: {
+                  composer_target: "submit",
+                  controller: "tooltip",
+                  tooltip_message_value: "Attach a screenshot or video and log at least 15 minutes of coding time to post.",
+                  tooltip_position_value: "top"
+                }
               ) %>
         </div>
       </div>

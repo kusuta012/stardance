@@ -87,13 +87,73 @@ export default class extends Controller {
       );
     }
     if (this.hasSubmitTarget) {
-      this.submitTarget.disabled = !enabled;
       // Toggle whichever button-component's disabled-modifier the target
       // happens to use. Harmless if the class isn't present.
       this.submitTarget.classList.toggle("action-btn--disabled", !enabled);
       this.submitTarget.classList.toggle(
         "special-action-btn--disabled",
         !enabled,
+      );
+      if (this.simpleModeValue) {
+        // Ship composer: plain native disable, no tooltip.
+        this.submitTarget.disabled = !enabled;
+      } else {
+        // Devlog composer: soft-disable via aria-disabled rather than the
+        // native attribute so the button still receives hover/focus and can
+        // surface a tooltip explaining what's missing. guardSubmit() blocks
+        // the actual submission.
+        this.submitTarget.setAttribute("aria-disabled", String(!enabled));
+        this.#setTooltip(enabled ? null : this.#disabledReason());
+      }
+    }
+  }
+
+  guardSubmit(event) {
+    if (
+      this.hasSubmitTarget &&
+      this.submitTarget.getAttribute("aria-disabled") === "true"
+    ) {
+      event.preventDefault();
+    }
+  }
+
+  // Human-readable explanation of why the Post button is currently disabled,
+  // listing every unmet requirement. Returns "" when nothing is missing.
+  // Only the devlog composer (non-simple mode) surfaces this.
+  #disabledReason() {
+    const missing = [];
+    if (this.#files.length === 0) missing.push("attach a screenshot or video");
+    if (!this.hackatimeLinkedValue) {
+      missing.push("link a Hackatime project to track your time");
+    } else if (this.#previewSeconds < 15 * 60) {
+      missing.push("log at least 15 minutes of coding time");
+    }
+
+    if (missing.length === 0) return "";
+    return `To post, ${missing.join(" and ")}.`;
+  }
+
+  // Drive the tooltip controller on the submit button: set its message when
+  // there's a reason to show one, and detach it entirely (by removing it from
+  // data-controller) once the button is enabled so it stops popping.
+  #setTooltip(message) {
+    if (!this.hasSubmitTarget) return;
+    const el = this.submitTarget;
+    const controllers = (el.getAttribute("data-controller") || "")
+      .split(/\s+/)
+      .filter(Boolean);
+    const hasTooltip = controllers.includes("tooltip");
+
+    if (message) {
+      el.dataset.tooltipMessageValue = message;
+      if (!hasTooltip) {
+        controllers.push("tooltip");
+        el.setAttribute("data-controller", controllers.join(" "));
+      }
+    } else if (hasTooltip) {
+      el.setAttribute(
+        "data-controller",
+        controllers.filter((c) => c !== "tooltip").join(" "),
       );
     }
   }
