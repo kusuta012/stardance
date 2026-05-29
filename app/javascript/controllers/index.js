@@ -103,9 +103,6 @@ application.register("hero-warp", HeroWarpController);
 import JsonHighlightController from "./json_highlight_controller";
 application.register("json-highlight", JsonHighlightController);
 
-import LockedTabController from "./locked_tab_controller";
-application.register("locked-tab", LockedTabController);
-
 import MarkdownPreviewController from "./markdown_preview_controller";
 application.register("markdown-preview", MarkdownPreviewController);
 
