@@ -8,7 +8,32 @@
 #     MovieGenre.find_or_create_by!(name: genre_name)
 #   end
 
-user = User.find_or_create_by!(email: "kartikey@hackclub.com", slack_id: "U05F4B48GBF")
+seed_admin_email = "kartikey@hackclub.com"
+seed_admin_slack_id = "U05F4B48GBF"
+
+email_user = User.find_by("LOWER(email) = ?", seed_admin_email.downcase)
+slack_user = User.find_by(slack_id: seed_admin_slack_id)
+
+if email_user.present? && slack_user.present? && email_user != slack_user
+  raise "Cannot seed admin user: #{seed_admin_email} and #{seed_admin_slack_id} belong to different users"
+end
+
+user = email_user || slack_user || User.new
+user.email ||= seed_admin_email
+user.slack_id ||= seed_admin_slack_id
+if user.display_name.blank?
+  display_name_base = "kartikey"
+  display_name_candidate = display_name_base
+  display_name_suffix = 2
+
+  while User.where.not(id: user.id).where("LOWER(display_name) = ?", display_name_candidate.downcase).exists?
+    display_name_candidate = "#{display_name_base}_#{display_name_suffix}"
+    display_name_suffix += 1
+  end
+
+  user.display_name = display_name_candidate
+end
+user.save!
 user.grant_role!(:super_admin)
 user.grant_role!(:admin)
 
