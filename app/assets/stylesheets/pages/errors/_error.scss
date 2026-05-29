@@ -64,16 +64,27 @@ body.error-page-body {
     color: var(--color-brand-highlight);
   }
 
-  // Sentry reference code shown on 500s — monospaced, easy to copy/read aloud.
   &__trace {
     display: inline-block;
     font-family: var(--font-family-sans);
     font-size: var(--font-size-s);
     color: var(--color-brand-mint);
     background-color: var(--color-overlay-light);
+    border: none;
     border-radius: var(--profile-radius);
     padding: var(--space-xxs) var(--space-s);
     word-break: break-all;
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease;
+
+    &:hover {
+      background-color: var(--color-overlay-light-soft);
+      color: var(--color-brand-highlight);
+    }
+
+    &--copied {
+      color: var(--color-brand-yellow);
+    }
   }
 
   // only for the homies i.e admins

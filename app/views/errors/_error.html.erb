@@ -11,12 +11,32 @@
       <p class="error-page__body">
         If you need help, share this reference code:
       </p>
-      <code class="error-page__trace"><%= trace_id %></code>
+      <button type="button" class="error-page__trace" data-trace-id="<%= trace_id %>" title="Click to copy">
+        <%= trace_id %>
+      </button>
+      <script>
+        (function () {
+          var button = document.currentScript.previousElementSibling;
+          if (!button || !button.classList.contains("error-page__trace")) return;
+
+          button.addEventListener("click", function () {
+            navigator.clipboard.writeText(button.dataset.traceId).then(function () {
+              var original = button.textContent;
+              button.textContent = "Copied!";
+              button.classList.add("error-page__trace--copied");
+              setTimeout(function () {
+                button.textContent = original;
+                button.classList.remove("error-page__trace--copied");
+              }, 2000);
+            });
+          });
+        })();
+      </script>
     <% end %>
 
     <p class="error-page__body">
       If you feel like this was a mistake, let us know in
-      <a href="https://hackclub.enterprise.slack.com/archives/C0AP0NMSP3P" class="error-page__channel">#stardance-help</span>,
+      <a href="https://hackclub.enterprise.slack.com/archives/C0AP0NMSP3P" class="error-page__channel">#stardance-help</a>,
       and we&rsquo;ll fix it right up!
     </p>
     <p class="error-page__body">
