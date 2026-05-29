@@ -425,6 +425,7 @@ Rails.application.routes.draw do
   get "report-reviews/dismiss/:token", to: "report_reviews#dismiss", as: :dismiss_report_token
 
   # Voting
+  get "rate/new", to: "votes#new", as: :new_rate
   resources :votes, only: [ :new, :create ]
   namespace :votes do
     resource :skip, only: :create
