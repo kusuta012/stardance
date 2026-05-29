@@ -3,7 +3,6 @@
 <%
   status_labels = { "pending" => "Pending", "approved" => "Approved", "returned" => "Returned", "all" => "All" }
   net_flow = @stats[:decisions_today] - @stats[:new_today]
-  week_net = @stats[:decisions_this_week] - @stats[:new_this_week]
   over_target = @stats[:pending] - @stats[:queue_target]
 %>
 
@@ -72,25 +71,19 @@
           </div>
 
           <div class="ship-queue__metric">
-            <span class="ship-queue__label">This week</span>
-            <span class="ship-queue__metric-value <%= week_net >= 0 ? "is-positive" : "is-negative" %>">
-              <%= week_net >= 0 ? "+" : "" %><%= week_net %>
+            <span class="ship-queue__label">Reviewed this week</span>
+            <span class="ship-queue__metric-value <%= @stats[:decisions_this_week] >= @stats[:new_this_week] ? "is-positive" : "is-negative" %>">
+              <%= @stats[:decisions_this_week] %>
             </span>
-            <span class="ship-queue__metric-hint">
-              reviewed <%= @stats[:decisions_this_week] %>, <%= @stats[:new_this_week] %> new
-            </span>
+            <span class="ship-queue__metric-hint"><%= @stats[:new_this_week] %> came in</span>
           </div>
 
           <div class="ship-queue__metric">
-            <span class="ship-queue__label">Reviewed in <%= @stats[:sla_days] %> days</span>
-            <span class="ship-queue__metric-value">
-              <%= @stats[:on_time_rate] ? "#{@stats[:on_time_rate]}%" : "—" %>
+            <span class="ship-queue__label">Waiting too long</span>
+            <span class="ship-queue__metric-value <%= @stats[:overdue_pending] > 0 ? "is-negative" : "is-positive" %>">
+              <%= @stats[:overdue_pending] %>
             </span>
-            <% if @stats[:overdue_pending] > 0 %>
-              <span class="ship-queue__metric-hint is-negative"><%= @stats[:overdue_pending] %> over <%= @stats[:sla_days] %> days</span>
-            <% else %>
-              <span class="ship-queue__metric-hint">all within target</span>
-            <% end %>
+            <span class="ship-queue__metric-hint">past the <%= @stats[:sla_days] %>-day target</span>
           </div>
         </div>
 

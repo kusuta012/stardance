@@ -153,10 +153,6 @@
   &__metric-hint {
     font-size: 0.75rem;
     color: var(--muted);
-
-    &.is-negative {
-      color: var(--negative);
-    }
   }
 
   &__alltime {

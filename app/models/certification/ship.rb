@@ -74,7 +74,6 @@ module Certification
       decided_count = approved_count + returned_count
 
       decided = where.not(status: :pending)
-      on_time_count = decided.where("decided_at <= created_at + (interval '1 day' * ?)", SLA_DAYS).count
 
       {
         pending: where(status: :pending).count,
@@ -89,7 +88,6 @@ module Certification
         oldest_pending: where(status: :pending).order(created_at: :asc).first,
         queue_target: QUEUE_TARGET,
         sla_days: SLA_DAYS,
-        on_time_rate: decided_count.zero? ? nil : (on_time_count * 100.0 / decided_count).round,
         overdue_pending: where(status: :pending).where("created_at < ?", now - SLA_DAYS.days).count
       }
     end
