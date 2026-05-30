@@ -9,14 +9,14 @@
 #                                      rsvps POST   /rsvps(.:format)                                                                                  rsvps#create
 #                               confirm_rsvp GET    /rsvps/confirm/:token(.:format)                                                                   rsvps#confirm
 #                                    tic_tac GET    /tic_tac(.:format)                                                                                rsvps#tic_tac {format: :text}
-#                                       shop GET    /shop(.:format)                                                                                   shop#index
-#                             shop_my_orders GET    /shop/my_orders(.:format)                                                                         shop#my_orders
-#                          cancel_shop_order DELETE /shop/cancel_order/:order_id(.:format)                                                            shop#cancel_order
-#                                 shop_order GET    /shop/order(.:format)                                                                             shop#order
-#                                            POST   /shop/order(.:format)                                                                             shop#create_order
-#                         shop_update_region PATCH  /shop/update_region(.:format)                                                                     shop#update_region
-#                              shop_category GET    /shop/category/:slug(.:format)                                                                    shop#category
-#                           shop_suggestions POST   /shop_suggestions(.:format)                                                                       shop_suggestions#create
+#                                       shop GET    /shop(.:format)                                                                                   shop/items#index
+#                                 shop_item GET    /shop/items/:id(.:format)                                                                         shop/items#show
+#                               shop_orders GET    /shop/orders(.:format)                                                                            shop/orders#index
+#                                            POST   /shop/orders(.:format)                                                                            shop/orders#create
+#                        cancel_shop_order DELETE   /shop/orders/:id/cancel(.:format)                                                                 shop/orders#cancel
+#                               shop_region PATCH   /shop/region(.:format)                                                                            shop/regions#update
+#                              shop_category GET    /shop/category/:slug(.:format)                                                                    shop/items#category
+#                          shop_suggestions POST    /shop/suggestions(.:format)                                                                       shop/suggestions#create
 #                        review_report_token GET    /report-reviews/review/:token(.:format)                                                           report_reviews#review
 #                       dismiss_report_token GET    /report-reviews/dismiss/:token(.:format)                                                          report_reviews#dismiss
 #                                   new_rate GET    /rate/new(.:format)                                                                               votes#new
@@ -425,14 +425,18 @@ Rails.application.routes.draw do
   get "tic_tac", to: "rsvps#tic_tac", as: :tic_tac, defaults: { format: :text }
 
   # Shop
-  get "shop", to: "shop#index"
-  get "shop/my_orders", to: "shop#my_orders"
-  delete "shop/cancel_order/:order_id", to: "shop#cancel_order", as: :cancel_shop_order
-  get "shop/order", to: "shop#order"
-  post "shop/order", to: "shop#create_order"
-  patch "shop/update_region", to: "shop#update_region"
-  get "shop/category/:slug", to: "shop#category", as: :shop_category
-  resources :shop_suggestions, only: [ :create ]
+  get "shop", to: "shop/items#index", as: :shop
+  namespace :shop do
+    resources :items, only: [ :show ]
+    resources :orders, only: [ :index, :create ] do
+      member do
+        delete :cancel
+      end
+    end
+    resource :region, only: [ :update ]
+    get "category/:slug", to: "items#category", as: :category
+    resources :suggestions, only: [ :create ]
+  end
 
   # Report Reviews
   get "report-reviews/review/:token", to: "report_reviews#review", as: :review_report_token

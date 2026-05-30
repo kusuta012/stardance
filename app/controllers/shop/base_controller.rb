@@ -1,0 +1,100 @@
+class Shop::BaseController < ApplicationController
+  private
+
+  def user_region
+    if current_user
+      return current_user.shop_region if current_user.shop_region.present?
+      return current_user.regions.first if current_user.has_regions?
+
+      primary_address = current_user.addresses.find { |a| a["primary"] } || current_user.addresses.first
+      country = primary_address&.dig("country")
+      region_from_address = Shop::Regionalizable.country_to_region(country)
+      return region_from_address if region_from_address != "XX" || country.present?
+    else
+      return session[:shop_region] if session[:shop_region].present? && Shop::Regionalizable::REGION_CODES.include?(session[:shop_region])
+    end
+
+    cached = cookies[:geoip_region]
+    return cached if cached.present? && cached != "XX" && Shop::Regionalizable::REGION_CODES.include?(cached)
+
+    tz_region = Shop::Regionalizable.timezone_to_region(cookies[:timezone])
+    return tz_region if tz_region.present? && tz_region != "XX"
+
+    "US"
+  end
+
+  def load_shop_items
+    excluded_free_stickers = current_user && (has_ordered_free_stickers? || current_user.shop_tutorial_completed?)
+    shop_page_data = ShopItem.cached_shop_page_data
+    @shop_items = shop_page_data[:buyable_standalone]
+    @shop_items = @shop_items.reject { |item| item.type == "ShopItem::FreeStickers" } if excluded_free_stickers
+    @featured_item = featured_free_stickers_item unless excluded_free_stickers
+    @recently_added_items = shop_page_data[:recently_added]
+    @user_balance = current_user&.cached_balance || 0
+
+    preload_shop_item_images(@shop_items + Array(@recently_added_items) + [ @featured_item ].compact)
+
+    if @shop_mode == :tutorial && @tutorial_items[:nothing].present?
+      tutorial_ids = @tutorial_items.values.compact.map(&:id).to_set
+      @shop_items = @shop_items + [ @tutorial_items[:nothing] ]
+      tutorial_picks, rest = @shop_items.partition { |item| tutorial_ids.include?(item.id) }
+      @shop_items = tutorial_picks + rest
+    end
+  end
+
+  def preload_shop_item_images(items)
+    items = items.compact.uniq
+    return if items.empty?
+
+    ActiveRecord::Associations::Preloader.new(
+      records: items,
+      associations: { image_attachment: [ :blob, :record ] }
+    ).call
+  end
+
+  def has_ordered_free_stickers?
+    current_user.has_gotten_free_stickers? ||
+      current_user.shop_orders.joins(:shop_item).where(shop_items: { type: "ShopItem::FreeStickers" }).exists?
+  end
+
+  def featured_free_stickers_item
+    item = ShopItem.find_by(id: 1, type: "ShopItem::FreeStickers", enabled: true)
+    item if item&.enabled_in_region?(@user_region)
+  end
+
+  def tutorial_item?(shop_item)
+    shop_item.is_a?(ShopItem::FreeStickers) || shop_item.is_a?(ShopItem::TutorialNothing)
+  end
+
+  def derive_shop_mode
+    return :preview if current_user.nil? || current_user.guest?
+    return :preview unless current_user.projects.exists?
+    return :tutorial if current_user.shop_tutorial_needed?
+
+    :normal
+  end
+
+  def load_tutorial_items
+    {
+      stickers: ShopItem::FreeStickers.where(enabled: true).first,
+      nothing:  ShopItem::TutorialNothing.where(enabled: true).first
+    }
+  end
+
+  def load_redeemable_submission(shop_item)
+    return nil unless current_user
+    submission_id = params[:mission_submission_id]
+    return nil if submission_id.blank?
+
+    submission = Mission::Submission
+      .includes(mission: :prizes, ship_event: { post: :user })
+      .find_by(id: submission_id)
+    return nil unless submission
+    return nil unless submission.approved?
+    return nil unless submission.shop_order_id.nil?
+    return nil unless submission.ship_event&.post&.user_id == current_user.id
+    return nil unless submission.mission.prizes.exists?(shop_item_id: shop_item.id)
+
+    submission
+  end
+end

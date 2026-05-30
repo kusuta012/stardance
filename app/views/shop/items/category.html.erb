@@ -76,7 +76,7 @@
         <% tutorial_item_ids = @shop_mode == :tutorial ? @tutorial_items.values.compact.map(&:id) : [] %>
         <% @shop_items.each do |item| %>
           <% if item.image.present? && item.enabled_in_region?(@user_region) %>
-            <%= render "shop/item_card",
+            <%= render "shop/items/item_card",
                   item: item,
                   mode: @shop_mode,
                   region: @user_region,
@@ -101,4 +101,4 @@
   <% end %>
 </div>
 
-<%= render "shop/suggestion_modal" if current_user && Flipper.enabled?(:shop_suggestion_box, current_user) && !current_user.has_dismissed?("shop_suggestion_box") %>
+<%= render "shop/items/suggestion_modal" if current_user && Flipper.enabled?(:shop_suggestion_box, current_user) && !current_user.has_dismissed?("shop_suggestion_box") %>

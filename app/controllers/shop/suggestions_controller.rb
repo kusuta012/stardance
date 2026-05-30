@@ -1,4 +1,4 @@
-class ShopSuggestionsController < ApplicationController
+class Shop::SuggestionsController < Shop::BaseController
   def create
     authorize :shop_suggestion
 

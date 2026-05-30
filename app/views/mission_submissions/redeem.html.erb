@@ -20,7 +20,7 @@
               <p><%= prize.shop_item.description %></p>
             <% end %>
             <%= link_to "Redeem this prize",
-                        shop_order_path(shop_item_id: prize.shop_item.id, mission_submission_id: @submission.id),
+                        shop_item_path(prize.shop_item, mission_submission_id: @submission.id),
                         class: "action-btn action-btn--large action-btn--primary" %>
           </li>
         <% end %>

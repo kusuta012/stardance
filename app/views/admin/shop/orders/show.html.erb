@@ -243,7 +243,7 @@
         <h2 class="aorder__card-title">Shop Item</h2>
         <div style="display:flex; gap: var(--space-xs); align-items:center;">
           <%= link_to "Admin →", admin_shop_item_path(@order.shop_item), class: "aorder__btn aorder__btn--secondary", style: "padding: 2px 10px; font-size: 12px;" %>
-          <%= link_to "Public →", shop_order_path(shop_item_id: @order.shop_item.id), class: "aorder__btn aorder__btn--secondary", style: "padding: 2px 10px; font-size: 12px;", target: "_blank" %>
+          <%= link_to "Public →", shop_item_path(@order.shop_item), class: "aorder__btn aorder__btn--secondary", style: "padding: 2px 10px; font-size: 12px;", target: "_blank" %>
           <% if policy(:admin).manage_shop? || policy(:admin).manage_draft_shop_items? %>
             <%= link_to "Edit →", edit_admin_shop_item_path(@order.shop_item), class: "aorder__btn aorder__btn--secondary", style: "padding: 2px 10px; font-size: 12px;" %>
           <% end %>
