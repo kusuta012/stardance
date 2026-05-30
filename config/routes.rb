@@ -705,12 +705,7 @@ Rails.application.routes.draw do
     end
     resources :reports, only: [ :create ], module: :projects
     resource :og_image, only: [ :show ], module: :projects, defaults: { format: :png }
-    resource :ships, only: [ :new, :create ], module: :projects do
-      # Wizard steps, one route per page (rather than ?step=N query param):
-      #   new      → refresher
-      #   compose  → ship post page (mission requirements + ship composer)
-      get :compose, on: :member
-    end
+    resource :ships, only: [ :create ], module: :projects
     resource :mission, only: [ :create, :destroy ], module: :projects, controller: "missions"
     resource :magic, only: [ :create, :destroy ], module: :projects, controller: "magic"
     resources :mission_section_completions,

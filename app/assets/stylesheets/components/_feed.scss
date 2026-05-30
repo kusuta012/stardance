@@ -265,7 +265,7 @@
     justify-content: space-between;
     gap: 14px;
     padding-top: var(--space-xs);
-    margin-left: var(--feed-content-offset);
+    margin-left: calc(var(--feed-content-offset) - 8px);
 
     @media (max-width: 640px) {
       margin-left: 0;

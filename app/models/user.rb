@@ -186,6 +186,20 @@ class User < ApplicationRecord
     "#{KERBAL_FIRST_NAMES.sample}_Kerman_#{rand(1000..9999)}"
   end
 
+  # Auto-assigned placeholder name for a guest who hasn't picked one yet: the
+  # email's local part plus a random number (e.g. "ada_lovelace_4821"). Trimmed
+  # to fit MAX_DISPLAY_NAME_LENGTH and the USERNAME_FORMAT; falls back to a
+  # Kerbal name when the local part has no usable characters.
+  def self.placeholder_display_name_from_email(email)
+    local = email.to_s.split("@").first.to_s
+                 .gsub(/[^a-zA-Z0-9_-]/, "_")
+                 .gsub(/_{2,}/, "_")
+                 .delete_prefix("_").delete_suffix("_")
+    return random_funny_display_name if local.blank?
+
+    "#{local.first(MAX_DISPLAY_NAME_LENGTH - 5)}_#{rand(1000..9999)}"
+  end
+
   def active_project_for_mission(mission)
     return nil if mission.nil?
     projects

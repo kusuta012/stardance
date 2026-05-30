@@ -52,14 +52,6 @@ body.shop-page.signed-in {
   margin-right: 0;
 }
 
-// Ship wizard — fullscreen dark cosmic layout, no sidebar margins.
-body.ship-page {
-  background-color: var(--color-space-bg);
-  color: var(--color-space-text);
-  margin-left: 0;
-  margin-right: 0;
-}
-
 // Three-column layout: sidebar, app, and rail
 body.app-layout-page.signed-in {
   margin-left: 0;

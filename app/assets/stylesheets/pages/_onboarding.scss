@@ -6,6 +6,36 @@
   min-height: 100vh;
 }
 
+// "ada@example.com · Log out" strip pinned to the bottom-left corner so users
+// aren't trapped in the wizard. Subtle enough not to distract.
+.onboarding-escape {
+  bottom: 1rem;
+  color: rgba(255, 255, 255, 0.45);
+  font-family: "Exo 2", sans-serif;
+  font-size: 0.8rem;
+  left: 1.25rem;
+  position: fixed;
+  z-index: 10;
+
+  &__email {
+    font-weight: 500;
+  }
+
+  &__sep {
+    margin: 0 0.3em;
+  }
+
+  &__link {
+    color: rgba(255, 255, 255, 0.55);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+
+    &:hover {
+      color: rgba(255, 255, 255, 0.85);
+    }
+  }
+}
+
 // Shared animated background rendered by the onboarding layout. Lives behind
 // every wizard step except welcome + complete, which have their own elaborate
 // planet-based backgrounds.

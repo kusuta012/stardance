@@ -1,4 +1,8 @@
 class HomeController < ApplicationController
+  include OnboardingResumable
+
+  before_action :resume_or_expire_onboarding!, only: :index
+
   def index
     authorize :home
     @body_class = "app-layout-page"
@@ -13,6 +17,21 @@ class HomeController < ApplicationController
   end
 
   private
+
+  # A guest who bailed mid-wizard and lands on /home: bring them back to where
+  # they left off if they started within the window, otherwise treat the
+  # placeholder account as expired and drop them on the landing page.
+  def resume_or_expire_onboarding!
+    user = current_user
+    return unless onboarding_in_progress?(user)
+
+    if onboarding_fresh?(user)
+      redirect_to onboarding_resume_path(user)
+    else
+      reset_session
+      redirect_to root_path
+    end
+  end
 
   def load_feed
     devlogs = Post.of_devlogs(join: true)

@@ -275,9 +275,6 @@ export default class extends Controller {
 
   async detectReadme() {
     if (!this.hasRepoUrlTarget || !this.hasReadmeUrlTarget) return;
-    if (this.userEditedReadme && !this.readmeUrlTarget.dataset.autofilled) {
-      return;
-    }
 
     const repoValue = (this.repoUrlTarget.value || "").trim();
     if (!repoValue) return;

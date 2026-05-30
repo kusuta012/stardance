@@ -330,8 +330,8 @@ class Project < ApplicationRecord
       },
       {
         key: :banner,
-        label: "Upload a banner image for your project",
-        tooltip: "A banner image (JPEG, PNG, or WebP, max 10MB) that represents your project on the explore page.",
+        label: "Upload a screenshot of your project",
+        tooltip: "A screenshot (JPEG, PNG, or WebP, max 10MB) that represents your project on the explore page.",
         passed: banner.attached?
       },
       {

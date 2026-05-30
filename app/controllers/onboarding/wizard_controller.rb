@@ -1,4 +1,6 @@
 class Onboarding::WizardController < ApplicationController
+  include OnboardingResumable
+
   layout "onboarding"
 
   before_action :require_onboarding_guest!,  only: %i[welcome birthday submit_birthday
@@ -10,7 +12,8 @@ class Onboarding::WizardController < ApplicationController
                                                       name submit_name]
 
   def start
-    if current_user.present?
+    # A fully-linked member has nothing left to onboard.
+    if current_user&.hca_linked?
       redirect_to home_path and return
     end
 
@@ -31,6 +34,19 @@ class Onboarding::WizardController < ApplicationController
 
     if existing
       session[:user_id] = existing.id
+
+      if onboarding_in_progress?(existing)
+        if onboarding_fresh?(existing)
+          # Started within the window — drop them back where they left off.
+          redirect_to onboarding_resume_path(existing) and return
+        else
+          # Stale placeholder account — wipe progress and start over.
+          restart_onboarding!(existing)
+          redirect_to onboarding_welcome_path and return
+        end
+      end
+
+      # Guest who already finished the wizard (still needs to link HCA later).
       redirect_to home_path and return
     end
 
@@ -130,7 +146,7 @@ class Onboarding::WizardController < ApplicationController
 
   def create_guest!(email)
     5.times do
-      user = User.new(email: email, display_name: User.random_funny_display_name)
+      user = User.new(email: email, display_name: User.placeholder_display_name_from_email(email))
       return user if user.save
       # Email collision means the user already exists — hand back the existing
       # record. For any other error (most likely a display_name collision in
