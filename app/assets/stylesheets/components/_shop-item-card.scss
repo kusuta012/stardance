@@ -59,7 +59,12 @@
     }
 
     &--new {
-      background: var(--color-brand-mint);
+      background: var(--color-brand-highlight);
+
+      &::after {
+        border-color: var(--color-brand-highlight) transparent
+          var(--color-brand-highlight) transparent;
+      }
     }
   }
 
