@@ -1,0 +1,16 @@
+<section class="discover-rail__section" aria-label="Your orders">
+  <h3 class="discover-rail__heading">YOUR ORDERS</h3>
+  <% if orders.any? %>
+    <ul class="discover-rail__list">
+      <% orders.each do |order| %>
+        <li class="discover-rail__card">
+          <p class="discover-rail__card-title">Order (ID: <%= order.id %>) <%= order.aasm_state&.humanize&.downcase %></p>
+          <p class="discover-rail__card-body"><%= helpers.truncate(order.shop_item&.name.to_s, length: 60) %></p>
+        </li>
+      <% end %>
+    </ul>
+    <%= helpers.link_to "see more →", helpers.shop_my_orders_path, class: "discover-rail__link" %>
+  <% else %>
+    <p class="discover-rail__placeholder-text">No orders yet.</p>
+  <% end %>
+</section>

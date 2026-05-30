@@ -71,3 +71,73 @@
     height: 238px;
   }
 }
+
+.discover-rail__placeholder-text {
+  background: rgba(217, 217, 217, 0.08);
+  border-radius: 8px;
+  color: var(--color-brand-off-white);
+  font-size: 0.9rem;
+  margin: 0;
+  opacity: 0.75;
+  padding: 0.7rem 0.9rem;
+}
+
+.discover-rail__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.discover-rail__card {
+  background: rgba(217, 217, 217, 0.18);
+  border-radius: 8px;
+  color: var(--color-space-text);
+  min-height: 48px;
+  padding: 0.6rem 0.75rem;
+}
+
+.discover-rail__card-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.discover-rail__card-body {
+  color: var(--color-brand-off-white);
+  font-size: 0.8rem;
+  margin: 0.15rem 0 0;
+  opacity: 0.85;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.discover-rail__link {
+  align-self: flex-end;
+  color: var(--color-space-text);
+  font-size: 0.85rem;
+  text-decoration: underline;
+
+  &:hover,
+  &:focus-visible {
+    color: var(--color-brand-highlight);
+  }
+}
+
+.discover-rail__section--wishlist {
+  .shop-goals__container {
+    background: transparent;
+    border: 0;
+    margin: 0;
+    padding: 0;
+  }
+
+  .shop-goals__items {
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+  }
+}

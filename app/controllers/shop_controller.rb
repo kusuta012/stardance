@@ -1,6 +1,9 @@
 class ShopController < ApplicationController
   skip_before_action :refresh_identity_on_portal_return, only: [ :index, :category ]
 
+  discover_rail_widgets :shop_orders, :shop_updates, :shop_wishlist,
+    context: -> { { sidebar_orders: @sidebar_orders || [], user_balance: @user_balance || 0 } }
+
   def index
     prepare_shop_chrome
     load_shop_items

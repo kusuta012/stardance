@@ -1,0 +1,23 @@
+<section class="discover-rail__section discover-rail__section--wishlist" aria-label="Wishlist">
+  <h3 class="discover-rail__heading">WISHLIST</h3>
+  <div class="shop-goals"
+       data-controller="shop-goals"
+       data-shop-goals-balance-value="<%= balance %>"
+       data-shop-goals-stardust-icon-url-value="<%= helpers.image_path('icons/stardust.png') %>">
+    <div class="shop-goals__container" data-shop-goals-target="container" style="display: none;">
+      <div class="shop-goals__items" data-shop-goals-target="items"></div>
+    </div>
+    <p class="discover-rail__placeholder-text" data-shop-goals-empty>
+      Tap the star on any item to add it here.
+    </p>
+    <script>
+      try {
+        var w = JSON.parse(localStorage.getItem("shop_wishlist"));
+        if (w && Object.keys(w).length) {
+          document.currentScript.previousElementSibling.style.display = "none";
+          document.currentScript.previousElementSibling.previousElementSibling.style.display = "block";
+        }
+      } catch (e) {}
+    </script>
+  </div>
+</section>
