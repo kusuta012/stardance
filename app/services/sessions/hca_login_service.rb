@@ -25,7 +25,6 @@ module Sessions
       user = user_for(identity, fields)
       is_new_user = user.new_record?
       guest_collision = guest_collision?(user)
-      had_prior_attestation = user.age_attestation.present?
 
       identity = resolve_uid_change(identity, user, fields[:slack_id], fields[:uid])
       identity.access_token = access_token
@@ -42,8 +41,8 @@ module Sessions
 
       user.apply_hca_verification_payload!(identity_data)
 
-      if had_prior_attestation && age_violation?(user, identity_data)
-        return age_violation_result(user, identity, identity_data, fields, is_new_user)
+      if user.age_attestation_ineligible?
+        return age_ineligible_result(user, is_new_user, guest_collision)
       end
 
       success_result(user, is_new_user, guest_collision)
@@ -150,11 +149,9 @@ module Sessions
         user.last_name = fields[:last_name] if fields[:last_name].present?
         user.slack_id = fields[:slack_id] if user.slack_id.to_s != fields[:slack_id]
 
-        if user.age_attestation.blank?
-          case hca_age_attestation(fields)
-          when :teen then user.age_attestation = "teen_13_18"
-          when :ineligible then user.age_attestation = "ineligible"
-          end
+        case hca_age_attestation(fields)
+        when :teen then user.age_attestation = "teen_13_18"
+        when :ineligible then user.age_attestation = "ineligible"
         end
 
         if is_new_user && referral_code.present? && referral_code.length <= 64
@@ -202,34 +199,12 @@ module Sessions
         age >= 13 && age <= 18 ? :teen : :ineligible
       end
 
-      def age_violation?(user, identity_data)
-        user.age_attestation_teen_13_18? && hca_birthday_contradicts_teen?(identity_data)
-      end
-
-      def hca_birthday_contradicts_teen?(identity_data)
-        birthday_str = identity_data["birthday"].to_s
-        return false if birthday_str.blank?
-
-        birthday = Date.parse(birthday_str) rescue nil
-        return false if birthday.nil?
-
-        age = age_from_birthday(birthday)
-        age < 13 || age > 18
-      end
-
-      def age_violation_result(user, identity, identity_data, fields, is_new_user)
-        user.update!(age_attestation: "ineligible")
-        identity.destroy
-        Sentry.capture_message(
-          "HCA birthday contradicts teen attestation; identity removed",
-          level: :warning,
-          extra: { user_id: user.id, hca_birthday: identity_data["birthday"], slack_id: fields[:slack_id] }
-        )
+      def age_ineligible_result(user, is_new_user, guest_collision)
         Result.new(
           status: :age_violation,
           user: user,
           is_new_user: is_new_user,
-          guest_collision: false,
+          guest_collision: guest_collision,
           alert: "We weren't able to verify your age. Please try again later."
         )
       end
