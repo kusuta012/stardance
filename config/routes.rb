@@ -679,6 +679,7 @@ Rails.application.routes.draw do
       # Mission::ShopUnlock model namespace. `controller:` is set explicitly
       # because `scope module: :missions` doesn't reliably propagate inside
       # a parent `resources do ... end` block.
+      resource  :language_rename, only: [ :create, :destroy ],         controller: "missions/language_renames"
       resource  :guide_paste,    only: [ :create ],                  controller: "missions/guide_pastes"
       resource  :guide_preview,  only: [ :create ],                  controller: "missions/guide_previews"
       resources :memberships,    only: [ :create, :update, :destroy ], controller: "missions/memberships"

@@ -49,7 +49,6 @@ class Rsvp < ApplicationRecord
   before_validation :downcase_email
   after_commit :deliver_signup_confirmation, on: :create
   after_commit :enqueue_geocode_job, on: :create
-  after_create_commit :broadcast_counter_update
 
   class << self
     def ambassador_referrals
@@ -100,14 +99,4 @@ class Rsvp < ApplicationRecord
 
   def enqueue_geocode_job = RsvpGeocodeJob.perform_later(id)
 
-  def broadcast_counter_update
-    Turbo::StreamsChannel.broadcast_replace_to(
-      "rsvp_counter",
-      target: "rsvp_counter",
-      partial: "landing/sections/rsvp_counter"
-    )
-  rescue StandardError => e
-    Rails.logger.warn("[Rsvp#broadcast_counter_update] #{e.class}: #{e.message}")
-    Sentry.capture_exception(e) if defined?(Sentry)
-  end
 end
