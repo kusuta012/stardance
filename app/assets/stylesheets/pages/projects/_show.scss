@@ -1352,7 +1352,7 @@ turbo-frame#project_hero {
   gap: var(--space-m);
   max-height: 90vh;
   overflow-y: auto;
-  padding: var(--space-l);
+  padding: var(--space-l) var(--space-l) calc(var(--space-l) + 4px);
   background: var(--color-space-bg-2, #0d0b2e);
   border: 1px solid var(--color-space-border);
   border-radius: var(--border-radius);
@@ -1489,10 +1489,41 @@ turbo-frame#project_hero {
   .feed-composer__attach {
     margin: 0;
     border-color: var(--color-space-text-muted);
+    background: transparent;
   }
 
   .feed-composer__grid {
     padding-left: 0;
+  }
+
+  .project-show__latest-ship {
+    background: transparent;
+  }
+
+  .ship-modal__textarea {
+    background: transparent;
+    border-color: var(--color-space-border);
+  }
+
+  .ship-modal__preview {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 4px;
+  }
+
+  .project-show__latest-ship-body {
+    display: flex;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .project-show__latest-ship-content {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+    min-width: 0;
   }
 }
 

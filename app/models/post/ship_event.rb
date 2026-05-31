@@ -47,7 +47,7 @@ class Post::ShipEvent < ApplicationRecord
   BODY_MAX_LENGTH = Post::Devlog::BODY_MAX_LENGTH
   REVIEW_INSTRUCTIONS_MAX_LENGTH = 2_000
   MAX_ATTACHMENTS = 4
-  ACCEPTED_CONTENT_TYPES = Post::Devlog::ACCEPTED_CONTENT_TYPES
+  ACCEPTED_CONTENT_TYPES = %w[image/jpeg image/png image/webp image/heic image/heif image/gif].freeze
 
   has_one :project, through: :post
   has_many :project_memberships, through: :project, source: :memberships
@@ -95,6 +95,7 @@ class Post::ShipEvent < ApplicationRecord
             content_type: { in: ACCEPTED_CONTENT_TYPES, spoofing_protection: true },
             size: { less_than: 50.megabytes, message: "is too large (max 50 MB)" },
             processable_file: true
+  validate :at_least_one_attachment
   validate :at_most_max_attachments
   validates :body, presence: { message: "Update message can't be blank" }
   validates :body, length: { maximum: BODY_MAX_LENGTH }, on: :create
@@ -152,6 +153,10 @@ class Post::ShipEvent < ApplicationRecord
   end
 
   private
+
+  def at_least_one_attachment
+    errors.add(:attachments, "must include at least one image or video") unless attachments.attached?
+  end
 
   def at_most_max_attachments
     if attachments.size > MAX_ATTACHMENTS
