@@ -76,7 +76,7 @@ class ProjectsController < ApplicationController
                        .includes(postable: [ :attachments_attachments ])
                        .order(created_at: :desc)
       unless include_deleted_devlogs
-        scope = scope.left_outer_joins("LEFT JOIN post_devlogs ON posts.postable_type = 'Post::Devlog' AND posts.postable_id = post_devlogs.id")
+        scope = scope.joins("LEFT JOIN post_devlogs ON posts.postable_type = 'Post::Devlog' AND posts.postable_id = post_devlogs.id")
                      .where("posts.postable_type != 'Post::Devlog' OR post_devlogs.deleted_at IS NULL")
       end
       scope.select { |post| post.postable.present? }
