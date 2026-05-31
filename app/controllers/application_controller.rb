@@ -158,13 +158,15 @@ class ApplicationController < ActionController::Base
       return
     end
 
-    @error_title = "Whoa there, explorer!"
-    @error_message = exception.message.presence || "You don't have the right ingredients to access this page."
-    @back_path = safe_referrer
+    render_not_authorized(exception)
+  end
+
+  def render_not_authorized(exception = nil)
+    message = exception&.message.presence || "You don't have permission to access this page."
 
     respond_to do |format|
-      format.html { render "errors/not_authorized", status: :forbidden }
-      format.json { render json: { error: @error_message }, status: :forbidden }
+      format.html { render "errors/not_authorized", status: :forbidden, layout: "application" }
+      format.json { render json: { error: message }, status: :forbidden }
     end
   end
 

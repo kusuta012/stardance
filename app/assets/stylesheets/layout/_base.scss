@@ -11,8 +11,8 @@ body {
   --sidebar-reserved: calc(var(--sidebar-width) + var(--sidebar-inset));
 
   margin: 0;
-  color: var(--color-text-body);
-  background-color: var(--color-bg);
+  color: var(--color-space-text);
+  background-color: var(--color-space-bg);
   display: flex;
   flex-direction: column;
   min-height: 100vh;
@@ -40,13 +40,6 @@ body.signed-in {
     margin-right: 20px;
     margin-bottom: 180px; // extra space for bottom-bar
   }
-}
-
-// Shop and guides pages keep the dark space backdrop even when logged out.
-body.shop-page:not(.signed-in),
-body.guides-page:not(.signed-in) {
-  background-color: var(--color-space-bg);
-  color: var(--color-space-text);
 }
 
 body.shop-page.signed-in {

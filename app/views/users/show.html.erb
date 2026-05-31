@@ -208,17 +208,7 @@
 <section class="profile-tab-content" role="tabpanel" aria-label="<%= @active_tab.titleize %>">
   <% case @active_tab %>
   <% when "feed" %>
-    <% if @activity.any? %>
-      <% @activity.each do |post| %>
-        <% if post.postable_type == "Post::ShipEvent" %>
-          <%= render "projects/ship_card", post: post, project: post.project %>
-        <% else %>
-          <%= render PostComponent.new(post: post, current_user: current_user, theme: :profile_dark) %>
-        <% end %>
-      <% end %>
-    <% else %>
-      <p class="profile-tab-content__empty">No activity yet.</p>
-    <% end %>
+    <%= render "users/feed_page" %>
   <% when "projects" %>
     <% if @projects.any? %>
       <ul class="project-list">

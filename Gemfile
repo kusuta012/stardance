@@ -149,3 +149,4 @@ gem "ferret", github: "hackclub/ferret-gem"
 gem "neighbor"
 
 gem "email_reply_parser"
+gem "appsignal"

@@ -40,6 +40,7 @@
     <%= preload_link_tag asset_path("Roboto.ttf"), as: "font", type: "font/ttf", crossorigin: true %>
 
     <%= yield :head %>
+    <%= render "shared/fullstory" %>
 
     <%= yield :stylesheets %>
     <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>

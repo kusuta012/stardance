@@ -21,6 +21,10 @@ class SessionsController < ApplicationController
 
     return_to = safe_return_to(session.delete(:return_to))
 
+    if result.is_new_user
+      UserMailer.onboarding_start(result.user).deliver_later
+    end
+
     destination = if result.user.onboarded_at.nil? && result.user.age_attestation_ineligible?
       onboarding_age_gate_path
     elsif result.user.onboarded_at.nil? && result.is_new_user

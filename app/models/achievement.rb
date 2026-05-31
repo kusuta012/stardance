@@ -10,7 +10,16 @@ Achievement = Data.define(:slug, :name, :description, :icon, :earned_check, :pro
     super(slug:, name:, description:, icon:, earned_check:, progress:, visibility:, secret_hint:, excluded_from_count:, stardust_reward:)
   end
 
-  ALL = [].freeze
+  ALL = [
+    new(
+      slug: :super_star,
+      name: "Super Star",
+      description: "Cooked so hard you ended up making a fire project that made our staff very happy!",
+      icon: "fire",
+      earned_check: ->(user) { user.projects.fire.exists? },
+      visibility: :secret
+    )
+  ].freeze
 
   SECRET = (Secrets.available? ? SecretAchievements::DEFINITIONS.map { |d| new(**d) } : []).freeze
 

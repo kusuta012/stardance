@@ -24,11 +24,27 @@
     box-shadow: 0 24px 60px var(--color-shadow-deep);
     max-width: 520px;
     width: 90%;
+    max-height: 85vh;
+    overflow-y: auto;
     color: var(--color-space-text);
     position: fixed;
     left: 50%;
     top: 50%;
     transform: translate(-50%, -50%);
+
+    &::-webkit-scrollbar {
+      width: 8px;
+    }
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    &::-webkit-scrollbar-thumb {
+      background: var(--color-overlay-light);
+      border-radius: 4px;
+    }
+    &::-webkit-scrollbar-thumb:hover {
+      background: var(--color-border-input);
+    }
 
     &::backdrop {
       background: var(--color-backdrop);

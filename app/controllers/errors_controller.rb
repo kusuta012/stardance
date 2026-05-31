@@ -27,6 +27,10 @@ class ErrorsController < ApplicationController
     render_error "errors/unprocessable_entity", 422
   end
 
+  def not_authorized
+    render_not_authorized
+  end
+
   def internal_server_error
     handle_error(request.env["action_dispatch.exception"] || RuntimeError.new("Internal Server Error"))
   end

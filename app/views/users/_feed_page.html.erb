@@ -1,0 +1,26 @@
+<%= turbo_frame_tag "profile_feed_page_#{@pagy.page}", target: "_top", class: "profile-feed-page" do %>
+  <% @activity.each do |post| %>
+    <% if post.postable_type == "Post::ShipEvent" %>
+      <%= render "projects/ship_card", post: post, project: post.project %>
+    <% else %>
+      <%= render PostComponent.new(post: post, current_user: current_user, theme: :profile_dark) %>
+    <% end %>
+  <% end %>
+
+  <% if @activity.empty? && @pagy.page == 1 && @pagy.next.nil? %>
+    <p class="profile-tab-content__empty">No activity yet.</p>
+  <% end %>
+
+  <% if @pagy.next %>
+    <%= turbo_frame_tag "profile_feed_page_#{@pagy.next}",
+                        src: profile_path(@user.display_name, page: @pagy.next),
+                        loading: :lazy,
+                        target: "_top",
+                        class: "profile-feed-page" do %>
+      <div class="feed-loading" role="status" aria-live="polite">
+        <span class="feed-loading__spinner" aria-hidden="true"></span>
+        <span class="feed-loading__label">Loading more&hellip;</span>
+      </div>
+    <% end %>
+  <% end %>
+<% end %>

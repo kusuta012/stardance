@@ -813,6 +813,7 @@ Rails.application.routes.draw do
   # every verb. Declared before the "/:ref" catch so numeric codes don't fall
   # through to landing#index.
   match "/400", to: "errors#bad_request",           via: :all
+  match "/403", to: "errors#not_authorized",        via: :all
   match "/404", to: "errors#not_found",             via: :all
   match "/406", to: "errors#not_acceptable",        via: :all
   match "/422", to: "errors#unprocessable_entity",  via: :all

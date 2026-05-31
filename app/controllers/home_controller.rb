@@ -6,10 +6,8 @@ class HomeController < ApplicationController
   def index
     authorize :home
     @body_class = "app-layout-page"
-    @welcoming = params[:welcome] == "1" && current_user.present? && !session[:welcomed]
+    @welcoming = params[:welcome] == "1" && current_user.present? && !current_user.has_dismissed?("home_intro")
     @body_class += " home-welcoming" if @welcoming
-
-    session[:welcomed] = true if @welcoming
 
     load_composer
   end

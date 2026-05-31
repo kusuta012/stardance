@@ -703,6 +703,12 @@ turbo-frame#profile_tabs {
   gap: var(--space-m);
 }
 
+.profile-feed-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-m);
+}
+
 .profile-tab-content__empty {
   display: block;
   padding: var(--space-l);

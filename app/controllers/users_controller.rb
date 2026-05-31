@@ -3,6 +3,7 @@ class UsersController < ApplicationController
   before_action :authorize_user, only: %i[update followers following]
 
   ALLOWED_TABS = %w[feed devlogs replies projects].freeze
+  ACTIVITY_LIMIT = 20
 
   def show
     if profile_hidden_from_viewer?
@@ -94,7 +95,9 @@ class UsersController < ApplicationController
     scope = hide_deleted_devlogs(scope) unless policy(@user).view_deleted_devlogs?
     scope = hide_deleted_reposts(scope)
     scope = hide_rejected_ships(scope)
-    scope.select { |post| !post.repost? || post.visible_repost_original_for?(current_user) }
+
+    @pagy, posts = pagy(:offset, scope, limit: ACTIVITY_LIMIT)
+    posts.select { |post| !post.repost? || post.visible_repost_original_for?(current_user) }
   end
 
   def hide_deleted_devlogs(scope)

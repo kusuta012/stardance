@@ -1,0 +1,9 @@
+class DropDiscoRecommendations < ActiveRecord::Migration[8.1]
+    drop_table :disco_recommendations do |t|
+      t.references :subject, polymorphic: true
+      t.references :item, polymorphic: true
+      t.string :context
+      t.float :score
+      t.timestamps
+  end
+end

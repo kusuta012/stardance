@@ -6,12 +6,19 @@ class LikesController < ApplicationController
     authorize @like
 
     if @like.save
+      @likeable.reload
+
       respond_to do |format|
         format.turbo_stream
         format.html { redirect_back fallback_location: @likeable }
       end
     else
-      redirect_back fallback_location: @likeable, alert: @like.errors.full_messages.to_sentence
+      @likeable.reload
+
+      respond_to do |format|
+        format.turbo_stream { render :create, status: :unprocessable_entity }
+        format.html { redirect_back fallback_location: @likeable, alert: @like.errors.full_messages.to_sentence }
+      end
     end
   end
 
@@ -20,6 +27,7 @@ class LikesController < ApplicationController
     authorize @like
 
     @like.destroy
+    @likeable.reload
 
     respond_to do |format|
       format.turbo_stream
