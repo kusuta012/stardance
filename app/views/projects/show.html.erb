@@ -543,11 +543,11 @@
           <h2 class="project-show__onboarding-header-title" id="project-show-onboarding-title">Welcome to your new project!</h2>
           <% if !@hackatime_linked %>
             <p class="project-show__onboarding-header-body">
-              Link Hackatime to start tracking your time. Once you do, you'll unlock free stickers in the shop!
+              Link Hackatime to start tracking your time. Once you do and post a devlog, you'll unlock free stickers in the shop!
             </p>
           <% elsif current_user && !current_user.shop_tutorial_completed? %>
             <p class="project-show__onboarding-header-body">
-              Hackatime is linked! Head to the <a href="/shop" class="project-show__onboarding-header-link">shop tab</a> to claim your free stickers.
+              Hackatime is linked! Post a devlog and head to the <a href="/shop" class="project-show__onboarding-header-link">shop tab</a> to claim your free stickers.
             </p>
           <% else %>
             <p class="project-show__onboarding-header-body">

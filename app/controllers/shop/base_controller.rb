@@ -70,7 +70,8 @@ class Shop::BaseController < ApplicationController
     return :preview if current_user.nil? || current_user.guest?
     return :preview unless current_user.projects.exists?
     return :preview unless current_user.hackatime_identity.present?
-    return :preview unless current_user.identity_verified?
+    return :preview unless current_user.identity_submitted?
+    return :preview unless Post.where(user: current_user, postable_type: "Post::Devlog").exists?
     return :tutorial if current_user.shop_tutorial_needed?
 
     :normal

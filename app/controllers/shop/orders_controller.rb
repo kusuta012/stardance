@@ -144,6 +144,12 @@ class Shop::OrdersController < Shop::BaseController
 
       current_user.mark_shop_tutorial_completed! if tutorial_item?(@shop_item)
 
+      if @shop_item.is_a?(ShopItem::TutorialNothing)
+        @shop_item.fulfill!(@order)
+        redirect_to shop_orders_path, notice: "Nice — that's your first order in! You're ready to ship your first project."
+        return
+      end
+
       unless current_user.eligible_for_shop?
         @order.queue_for_verification!
         @order.accessory_orders.each(&:queue_for_verification!)
@@ -152,12 +158,6 @@ class Shop::OrdersController < Shop::BaseController
       end
 
       return if @shop_item.is_a?(ShopItem::FreeStickers) && !fulfill_free_stickers!
-
-      if @shop_item.is_a?(ShopItem::TutorialNothing)
-        @shop_item.fulfill!(@order)
-        redirect_to shop_orders_path, notice: "Nice — that's your first order in! You're ready to ship your first project."
-        return
-      end
 
       if @shop_item.is_a?(ShopItem::SillyItemType)
         @order.approve!

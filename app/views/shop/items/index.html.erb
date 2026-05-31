@@ -29,13 +29,27 @@
             <span class="shop-hub__progress-check">✓</span>
             Link Hackatime
           </div>
-          <% idv_done = current_user&.identity_verified? %>
+          <% idv_done = current_user&.identity_submitted? %>
           <div class="shop-hub__progress-item <%= 'shop-hub__progress-item--done' if idv_done %>">
             <span class="shop-hub__progress-check"><%= idv_done ? "✓" : "3" %></span>
             <% if idv_done %>
               Verify your identity
             <% else %>
               <%= button_to "Verify your identity", my_verification_refresh_path(idv_check: 1), method: :post, class: "shop-hub__progress-link", form: { class: "shop-hub__progress-form" } %>
+            <% end %>
+          </div>
+          <% devlog_done = Post.where(user: current_user, postable_type: "Post::Devlog").exists? %>
+          <div class="shop-hub__progress-item <%= 'shop-hub__progress-item--done' if devlog_done %>">
+            <span class="shop-hub__progress-check"><%= devlog_done ? "✓" : "4" %></span>
+            <% if devlog_done %>
+              Post a devlog
+            <% else %>
+              <% first_project = current_user&.projects&.first %>
+              <% if first_project %>
+                <%= link_to "Post a devlog", project_path(first_project), class: "shop-hub__progress-link" %>
+              <% else %>
+                Post a devlog
+              <% end %>
             <% end %>
           </div>
         </div>
