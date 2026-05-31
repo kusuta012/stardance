@@ -968,6 +968,12 @@ turbo-frame#profile_tabs {
 
 // Followers/following modal
 .followers-modal {
+  // Explicit centering: CSS resets (margin: 0) override the browser's UA
+  // sheet which centers dialogs via margin: auto. We restore it here so
+  // showModal() renders the sheet in the middle of the viewport.
+  position: fixed;
+  inset: 0;
+  margin: auto;
   border: none;
   border-radius: var(--profile-radius);
   padding: 0;
@@ -975,6 +981,13 @@ turbo-frame#profile_tabs {
   color: var(--color-space-text);
   width: min(440px, 90vw);
   max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+
+  &:not([open]) {
+    display: none;
+  }
 
   &::backdrop {
     background: var(--color-backdrop);
@@ -1006,6 +1019,7 @@ turbo-frame#profile_tabs {
 }
 
 .followers-modal__body {
+  flex: 1;
   padding: var(--space-m);
   overflow-y: auto;
 }

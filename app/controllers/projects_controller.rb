@@ -119,7 +119,7 @@ class ProjectsController < ApplicationController
       @liked_devlog_ids = Set.new
     end
 
-    ahoy.track "Viewed project", project_id: @project.id
+    track_event "Viewed project", project_id: @project.id
 
     @latest_ship_post = @posts.find { |post| post.postable_type == "Post::ShipEvent" }
     latest_ship_event = @latest_ship_post&.postable
@@ -221,6 +221,7 @@ class ProjectsController < ApplicationController
     end
 
     if success
+      track_event "project_created", { project_id: @project.id, source: "new_form" }
       flash[:notice] = "Project created successfully"
 
       project_hours = @project.total_hackatime_hours
@@ -397,7 +398,7 @@ class ProjectsController < ApplicationController
   end
 
   def project_params
-    params.require(:project).permit(:title, :description, :demo_url, :repo_url, :readme_url, :banner, :ai_declaration, hackatime_project_ids: [])
+    params.require(:project).permit(:title, :description, :demo_url, :repo_url, :readme_url, :banner, :ai_declaration, :update_description, hackatime_project_ids: [])
   end
 
   def hackatime_project_ids

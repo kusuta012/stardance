@@ -806,28 +806,6 @@ html.warped .hero__doodle-arrow.is-falling {
   transition: opacity 320ms ease-out;
 }
 
-@keyframes hero-video-pin-out {
-  from {
-    transform: translateX(0);
-    opacity: 1;
-  }
-  to {
-    transform: translateX(120%);
-    opacity: 0;
-  }
-}
-
-@keyframes hero-video-pin-in {
-  from {
-    transform: translateX(120%);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
-}
-
 .hero__earth,
 .hero__moon {
   position: absolute;
@@ -909,5 +887,33 @@ html.warped {
     @media (max-width: 600px) {
       max-width: 90vw;
     }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero__video--unpinning {
+    animation: none;
+  }
+}
+
+@keyframes hero-video-pin-out {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(120%);
+    opacity: 0;
+  }
+}
+
+@keyframes hero-video-pin-in {
+  from {
+    transform: translateX(120%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
   }
 }

@@ -13,6 +13,10 @@
 #  enriched_ref                 :string
 #  experience_level             :string
 #  first_name                   :string
+#  geocoded_country             :string
+#  geocoded_lat                 :float
+#  geocoded_lon                 :float
+#  geocoded_subdivision         :string
 #  granted_roles                :string           default([]), not null, is an Array
 #  guest_email                  :string
 #  has_gotten_free_stickers     :boolean          default(FALSE)
@@ -20,6 +24,7 @@
 #  hcb_email                    :string
 #  interests                    :string           default([]), is an Array
 #  internal_notes               :text
+#  ip_address                   :string
 #  last_name                    :string
 #  manual_ysws_override         :boolean
 #  mission_review_notifications :boolean          default(TRUE), not null
@@ -32,6 +37,7 @@
 #  shop_tutorial_started_at     :datetime
 #  synced_at                    :datetime
 #  things_dismissed             :string           default([]), not null, is an Array
+#  user_agent                   :string
 #  user_ref                     :string
 #  verification_checked_at      :datetime
 #  verification_status          :string           default("needs_submission"), not null
@@ -53,7 +59,10 @@
 #  index_users_on_slack_id                   (slack_id) UNIQUE
 #
 class User < ApplicationRecord
-  has_paper_trail ignore: [ :votes_count, :updated_at, :shop_region ], on: [ :update, :destroy ]
+  include SemanticSearchIndexable
+
+  has_paper_trail ignore: [ :votes_count, :updated_at, :shop_region, :ip_address, :user_agent ], on: [ :update, :destroy ]
+  semantic_search_indexable type: "user"
 
   has_many :identities, class_name: "User::Identity", dependent: :destroy
   has_one :hackatime_identity, -> { hackatime }, class_name: "User::Identity"
@@ -141,6 +150,7 @@ class User < ApplicationRecord
   INTERESTS_UNKNOWN = "dont_know".freeze
 
   validate :interests_must_be_allowed
+  after_commit :enqueue_geocode_job, on: :create
 
   scope :discoverable, -> { joins(:hack_club_identity).distinct }
 
@@ -229,6 +239,9 @@ class User < ApplicationRecord
   rescue StandardError => e
     Rails.logger.warn("[User#broadcast_signup_counter] #{e.class}: #{e.message}")
     Sentry.capture_exception(e) if defined?(Sentry)
+
+  def enqueue_geocode_job
+    UserGeocodeJob.perform_later(id) if ip_address.present?
   end
 
   def interests_must_be_allowed

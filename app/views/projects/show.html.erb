@@ -128,13 +128,10 @@
               <div class="project-show__field project-show__field--inline project-show__field--hackatime">
                 <span>Hackatime projects</span>
                 <% if !@hackatime_linked %>
-                  <%= button_to "/auth/hackatime",
-                                method: :post,
-                                params: { origin: request.fullpath },
-                                class: "project-show__hackatime-connect",
-                                form: { class: "project-show__hackatime-connect-form" } do %>
-                    Connect Hackatime to link projects →
-                  <% end %>
+                  <%= link_to "Connect Hackatime to link projects →",
+                              "/auth/hackatime?origin=#{CGI.escape(request.fullpath)}",
+                              class: "project-show__hackatime-connect",
+                              data: { turbo_method: :post } %>
                 <% elsif @hackatime_dropdown_items.blank? %>
                   <span class="project-show__hackatime-empty">
                     No Hackatime projects yet — start coding with Hackatime installed to see them here.
@@ -188,7 +185,7 @@
               </div>
 
               <label class="project-show__field project-show__field--inline">
-                <span>AI usage declaration</span>
+                <span>AI usage declaration <%= render "projects/help_tooltip", text: "Describe how you used AI in this project (e.g. \"Used ChatGPT for debugging\", \"GitHub Copilot for code completion\"). AI use is OK, but it should feel like your own work! If you didn't use AI, you can state that." %></span>
                 <%= form.text_area :ai_declaration,
                                    rows: 2,
                                    maxlength: 1000,
@@ -197,8 +194,26 @@
               </label>
 
               <label class="project-show__started-check">
-                <input class="project-show__started-check-input" type="checkbox" aria-label="This project was started before June 1 2026, or was previously shipped to a Hack Club event.">
+                <input class="project-show__started-check-input"
+                       type="checkbox"
+                       data-project-form-target="updateDeclaration"
+                       data-action="change->project-form#toggleUpdateDescription"
+                       <%= "checked" if @project.update_description.present? %>
+                       aria-label="This project was started before June 1 2026, or was previously shipped to a Hack Club event.">
                 <span>This project was started <strong>before June 1 2026</strong>, or was <strong>previously shipped</strong> to a Hack Club event.</span>
+              </label>
+
+              <label class="project-show__field project-show__field--inline"
+                     data-project-form-target="updateDescriptionContainer"
+                     <%= "hidden" if @project.update_description.blank? %>>
+                <span>Update Description <%= render "projects/help_tooltip", text: "Describe the features you've added or updated, and the impact these changes have had on your project overall. Please be specific." %></span>
+                <%= form.text_area :update_description,
+                                   rows: 3,
+                                   maxlength: 1000,
+                                   class: "project-show__control project-show__textarea",
+                                   placeholder: "What did you update and why?",
+                                   aria: { label: "Update description" },
+                                   data: { "project-form-target": "updateDescriptionField" } %>
               </label>
 
               <div class="project-show__sparkle" aria-hidden="true"></div>
@@ -543,11 +558,11 @@
           <h2 class="project-show__onboarding-header-title" id="project-show-onboarding-title">Welcome to your new project!</h2>
           <% if !@hackatime_linked %>
             <p class="project-show__onboarding-header-body">
-              Link Hackatime to start tracking your time. Once you do, you'll unlock free stickers in the shop!
+              Link Hackatime to start tracking your time. Once you do and post a devlog, you'll unlock free stickers in the shop!
             </p>
           <% elsif current_user && !current_user.shop_tutorial_completed? %>
             <p class="project-show__onboarding-header-body">
-              Hackatime is linked! Head to the <a href="/shop" class="project-show__onboarding-header-link">shop tab</a> to claim your free stickers.
+              Hackatime is linked! Post a devlog and head to the <a href="/shop" class="project-show__onboarding-header-link">shop tab</a> to claim your free stickers.
             </p>
           <% else %>
             <p class="project-show__onboarding-header-body">

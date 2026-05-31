@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_05_31_025605) do
+ActiveRecord::Schema[8.1].define(version: 2026_05_31_184504) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "vector"
@@ -233,19 +233,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_31_025605) do
     t.index ["devlog_id", "version_number"], name: "index_devlog_versions_on_devlog_id_and_version_number", unique: true
     t.index ["devlog_id"], name: "index_devlog_versions_on_devlog_id"
     t.index ["user_id"], name: "index_devlog_versions_on_user_id"
-  end
-
-  create_table "disco_recommendations", force: :cascade do |t|
-    t.string "context"
-    t.datetime "created_at", null: false
-    t.bigint "item_id"
-    t.string "item_type"
-    t.float "score"
-    t.bigint "subject_id"
-    t.string "subject_type"
-    t.datetime "updated_at", null: false
-    t.index ["item_type", "item_id"], name: "index_disco_recommendations_on_item"
-    t.index ["subject_type", "subject_id"], name: "index_disco_recommendations_on_subject"
   end
 
   create_table "flipper_features", force: :cascade do |t|
@@ -656,6 +643,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_31_025605) do
     t.datetime "synced_at"
     t.string "title", null: false
     t.boolean "tutorial", default: false, null: false
+    t.text "update_description"
     t.datetime "updated_at", null: false
     t.index ["deleted_at"], name: "index_projects_on_deleted_at"
     t.index ["marked_fire_by_id"], name: "index_projects_on_marked_fire_by_id"
@@ -1088,6 +1076,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_31_025605) do
     t.string "enriched_ref"
     t.string "experience_level"
     t.string "first_name"
+    t.string "geocoded_country"
+    t.float "geocoded_lat"
+    t.float "geocoded_lon"
+    t.string "geocoded_subdivision"
     t.string "granted_roles", default: [], null: false, array: true
     t.string "guest_email"
     t.boolean "has_gotten_free_stickers", default: false
@@ -1095,6 +1087,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_31_025605) do
     t.string "hcb_email"
     t.string "interests", default: [], array: true
     t.text "internal_notes"
+    t.string "ip_address"
     t.string "last_name"
     t.boolean "manual_ysws_override"
     t.boolean "mission_review_notifications", default: true, null: false
@@ -1109,6 +1102,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_31_025605) do
     t.datetime "synced_at"
     t.string "things_dismissed", default: [], null: false, array: true
     t.datetime "updated_at", null: false
+    t.string "user_agent"
     t.string "user_ref"
     t.datetime "verification_checked_at"
     t.string "verification_status", default: "needs_submission", null: false

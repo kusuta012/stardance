@@ -53,7 +53,7 @@ class Shop::ItemsController < Shop::BaseController
       @required_achievements = @shop_item.requires_achievement.map { |slug| Achievement.find(slug) }
       @locked_by_achievement = !@shop_item.meet_achievement_require?(current_user)
     end
-    ahoy.track "Viewed shop item", shop_item_id: @shop_item.id
+    track_event "Viewed shop item", shop_item_id: @shop_item.id
   end
 
   def category
@@ -125,7 +125,7 @@ class Shop::ItemsController < Shop::BaseController
     return nil if current_user.shop_tutorial_completed?
 
     return "shop/items/tutorial_project" unless current_user.projects.exists?
-    return "shop/items/tutorial_verify"  unless current_user.identity_verified?
+    return "shop/items/tutorial_verify"  unless current_user.identity_submitted?
     return "shop/items/tutorial_address" if current_user.addresses.empty?
 
     nil

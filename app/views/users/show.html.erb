@@ -12,7 +12,7 @@
 <% own_profile = current_user&.id == @user.id %>
 <% banner_url = @user.banner.attached? ? url_for(@user.banner) : image_path("profile/default-banner.png") %>
 
-<div class="app-layout">
+<div class="app-layout" data-controller="profile-modal">
   <div class="app-layout__main">
     <%= turbo_frame_tag "profile_card" do %>
     <%= form_with model: @user, url: user_path(@user), method: :patch, multipart: true,
@@ -77,7 +77,7 @@
                       aria-live="polite"></span>
               </div>
             <% end %>
-            <p class="profile__joined">Joined <%= @user.created_at.to_date.strftime("%-d %b %Y").downcase %></p>
+            <p class="profile__joined">Joined <%= @user.created_at.to_date.strftime("%-d %b %Y") %></p>
           </div>
         </div>
 
@@ -286,17 +286,17 @@
   </div>
 
   <%= render DiscoverRailComponent.new %>
-</div>
 
-<dialog id="followers-modal"
-        class="followers-modal"
-        data-controller="profile-modal"
-        data-profile-modal-target="dialog">
-  <header class="followers-modal__header">
-    <h2 class="followers-modal__title" data-profile-modal-target="title">Followers</h2>
-    <button type="button" class="followers-modal__close" data-action="click->profile-modal#close" aria-label="Close">×</button>
-  </header>
-  <div class="followers-modal__body" data-profile-modal-target="body">
-    <p class="followers-modal__loading">Loading…</p>
-  </div>
-</dialog>
+  <dialog id="followers-modal"
+          class="followers-modal"
+          data-profile-modal-target="dialog"
+          data-action="click->profile-modal#backdropClose">
+    <header class="followers-modal__header">
+      <h2 class="followers-modal__title" data-profile-modal-target="title">Followers</h2>
+      <button type="button" class="followers-modal__close" data-action="click->profile-modal#close" aria-label="Close">×</button>
+    </header>
+    <div class="followers-modal__body" data-profile-modal-target="body">
+      <p class="followers-modal__loading">Loading…</p>
+    </div>
+  </dialog>
+</div>

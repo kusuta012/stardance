@@ -5,7 +5,9 @@ class SessionsController < ApplicationController
     result = Sessions::HCALoginService.new(
       auth: request.env["omniauth.auth"],
       current_user: current_user,
-      referral_code: cookies[:referral_code]
+      referral_code: cookies[:referral_code],
+      ip_address: client_ip_address,
+      user_agent: request.user_agent
     ).call
 
     unless result.ok?
@@ -39,6 +41,8 @@ class SessionsController < ApplicationController
       home_path
     end
 
+    track_event "signed_up", { user_id: result.user.id } if result.is_new_user
+    track_event "hca_linked", { user_id: result.user.id } if result.is_new_user || result.guest_collision
     redirect_to destination, notice: "Signed in with Hack Club"
   end
 

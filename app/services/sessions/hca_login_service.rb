@@ -4,10 +4,12 @@ module Sessions
       def ok? = status == :ok
     end
 
-    def initialize(auth:, current_user:, referral_code: nil)
+    def initialize(auth:, current_user:, referral_code: nil, ip_address: nil, user_agent: nil)
       @auth = auth
       @current_user = current_user
       @referral_code = referral_code
+      @ip_address = ip_address
+      @user_agent = user_agent
     end
 
     def call
@@ -34,6 +36,10 @@ module Sessions
         return failure
       end
 
+      if user.age_attestation_ineligible?
+        return age_ineligible_result(user, is_new_user, guest_collision)
+      end
+
       identity.user = user
       if (failure = save_identity(identity, user))
         return failure
@@ -41,15 +47,11 @@ module Sessions
 
       user.apply_hca_verification_payload!(identity_data)
 
-      if user.age_attestation_ineligible?
-        return age_ineligible_result(user, is_new_user, guest_collision)
-      end
-
       success_result(user, is_new_user, guest_collision)
     end
 
     private
-      attr_reader :auth, :current_user, :referral_code
+      attr_reader :auth, :current_user, :referral_code, :ip_address, :user_agent
 
       def valid_provider?
         # provider is a symbol. do not change it to string... equality will fail otherwise
@@ -156,6 +158,11 @@ module Sessions
 
         if (is_new_user || user.ref.blank?) && referral_code.present? && referral_code.length <= 64
           user.ref = referral_code
+        end
+
+        if is_new_user
+          user.ip_address = ip_address
+          user.user_agent = user_agent
         end
       end
 

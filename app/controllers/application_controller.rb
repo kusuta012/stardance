@@ -6,6 +6,7 @@ class ApplicationController < ActionController::Base
   include Pundit::Authorization
   include Pagy::Method
   include Achievementable
+  include Trackable
 
   before_action :store_referral_code
   before_action :remember_page
@@ -106,6 +107,10 @@ class ApplicationController < ActionController::Base
       pages << current_path
       session[:previous_pages] = pages.last(10)
     end
+  end
+
+  def client_ip_address
+    request.headers["CF-Connecting-IP"].presence || request.remote_ip
   end
 
   def prepare_boot_splash

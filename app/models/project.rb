@@ -20,6 +20,7 @@
 #  synced_at          :datetime
 #  title              :string           not null
 #  tutorial           :boolean          default(FALSE), not null
+#  update_description :text
 #  created_at         :datetime         not null
 #  updated_at         :datetime         not null
 #  fire_letter_id     :string
@@ -39,8 +40,10 @@ require "net/http"
 class Project < ApplicationRecord
   include AASM
   include SoftDeletable
+  include SemanticSearchIndexable
 
   has_ferret_search :title, :description
+  semantic_search_indexable type: "project"
 
   has_paper_trail
 
