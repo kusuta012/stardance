@@ -1,7 +1,7 @@
 import { Controller } from "@hotwired/stimulus";
 
 export default class extends Controller {
-  static targets = ["input", "results", "widgets"];
+  static targets = ["input", "results", "widgets", "clearButton"];
   static values = { url: String };
 
   connect() {
@@ -17,6 +17,7 @@ export default class extends Controller {
     clearTimeout(this._timer);
 
     if (!query) {
+      this.clearButtonTarget.hidden = true;
       this.resultsTarget.hidden = true;
       this.resultsTarget.removeAttribute("src");
       this.resultsTarget.innerHTML = "";
@@ -24,6 +25,7 @@ export default class extends Controller {
       return;
     }
 
+    this.clearButtonTarget.hidden = false;
     this.widgetsTarget.hidden = true;
     this.resultsTarget.hidden = false;
     this.resultsTarget.innerHTML =
@@ -36,5 +38,11 @@ export default class extends Controller {
     url.searchParams.set("q", query);
     url.searchParams.set("surface", "discover_rail");
     this.resultsTarget.src = url.toString();
+  }
+
+  clear() {
+    this.inputTarget.value = "";
+    this.search();
+    this.inputTarget.focus();
   }
 }

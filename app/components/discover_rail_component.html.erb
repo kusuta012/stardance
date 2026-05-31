@@ -11,6 +11,14 @@
            data-discover-rail-search-target="input"
            data-action="input->discover-rail-search#search">
     <%= helpers.inline_svg_tag "icons/search.svg", class: "discover-rail__search-icon" %>
+    <button type="button"
+            class="discover-rail__search-clear"
+            aria-label="Clear search"
+            data-discover-rail-search-target="clearButton"
+            data-action="discover-rail-search#clear"
+            hidden>
+      <%= helpers.inline_svg_tag "icons/close.svg", class: "discover-rail__search-clear-icon" %>
+    </button>
   </div>
 
   <turbo-frame id="discover-rail-results" data-discover-rail-search-target="results" hidden></turbo-frame>

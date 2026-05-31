@@ -2,7 +2,7 @@
 
 Rails.application.config.x.semantic_search = ActiveSupport::OrderedOptions.new
 Rails.application.config.x.semantic_search.redis = {
-  url: ENV["SEARCH_REDIS_URL"].presence,
+  url: ENV["SEARCH_REDIS_URL"].presence || ENV["REDIS_CACHE_URL"].presence,
   reconnect_attempts: 2,
   read_timeout: 1.0,
   error_handler: ->(method:, returning:, exception:) {
@@ -15,6 +15,8 @@ Rails.application.config.x.semantic_search.redis = {
     end
   }
 }
+Rails.application.config.x.semantic_search.openai_api_key =
+  Rails.application.credentials.dig(:openai, :api_key).presence
 Rails.application.config.x.semantic_search.embedding_model =
   ENV["SEARCH_EMBEDDING_MODEL"].presence || "text-embedding-3-small"
 Rails.application.config.x.semantic_search.embedding_dimensions =

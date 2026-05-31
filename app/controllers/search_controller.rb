@@ -59,7 +59,7 @@ class SearchController < ApplicationController
       commands: command_results(q, surface),
       projects: semantic_results.fetch("project", []),
       posts: semantic_results.fetch("devlog", []) + semantic_results.fetch("ship", []),
-      users: semantic_results.fetch("user", [])
+      users: merged_user_results(q, semantic_results.fetch("user", []))
     }
 
     respond_to do |format|
@@ -86,6 +86,27 @@ class SearchController < ApplicationController
         method: command.post? ? "post" : "get"
       }
     end
+  end
+
+  def merged_user_results(query, semantic_users)
+    (prefix_user_results(query) + semantic_users)
+      .uniq { |result| result[:id] || result["id"] }
+      .first(GLOBAL_MAX_RESULTS)
+  end
+
+  def prefix_user_results(query)
+    q = query.to_s.strip.delete_prefix("@").downcase
+    return [] if q.blank?
+
+    scope = User.discoverable.where.not(display_name: [ nil, "" ])
+    scope = scope.where(verification_status: "verified") unless current_user&.admin?
+
+    scope
+      .where("LOWER(display_name) LIKE ?", "#{ActiveRecord::Base.sanitize_sql_like(q)}%")
+      .order(:display_name)
+      .limit(GLOBAL_MAX_RESULTS)
+      .map { |user| SemanticSearch::Document.for(user)&.to_result }
+      .compact
   end
 
   def avatar_for(slack_id)

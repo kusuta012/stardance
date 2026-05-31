@@ -117,7 +117,7 @@ module SemanticSearch
     end
 
     def to_result
-      {
+      result = {
         type: type,
         id: record_id,
         title: title,
@@ -125,6 +125,8 @@ module SemanticSearch
         preview: preview,
         path: path
       }
+      result[:avatar] = record.avatar if record.is_a?(User)
+      result
     end
   end
 end
