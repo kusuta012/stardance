@@ -1,4 +1,7 @@
 <% content_for :title, "YSWS Review ##{@review.id}" %>
+<% content_for :stylesheets do %>
+  <%= stylesheet_link_tag "admin", "data-turbo-track": "reload" %>
+<% end %>
 
 <main class="certification-ysws" role="main" data-controller="certification--ysws--review-sidebar certification--ysws--fraud-report certification--ysws--media-viewer" data-certification--ysws--fraud-report-review-id-value="<%= @review.id %>">
   <!-- Header Section -->
