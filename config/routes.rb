@@ -501,6 +501,7 @@ Rails.application.routes.draw do
 
   # Home
   get "home", to: "home#index"
+  resources :feed_events, only: [ :create ]
   namespace :home do
     resource :feed, only: [ :show ]
   end

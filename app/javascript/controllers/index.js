@@ -94,6 +94,9 @@ application.register("emoji-picker", EmojiPickerController);
 import FallingStarController from "./falling_star_controller";
 application.register("falling-star", FallingStarController);
 
+import FeedEngagementController from "./feed_engagement_controller";
+application.register("feed-engagement", FeedEngagementController);
+
 import HorizontalScrollController from "./horizontal_scroll_controller";
 application.register("horizontal-scroll", HorizontalScrollController);
 
