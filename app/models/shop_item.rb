@@ -308,6 +308,26 @@ class ShopItem < ApplicationRecord
     price / (Rails.configuration.game_constants.tickets_per_dollar * Rails.configuration.game_constants.dollars_per_mean_hour)
   end
 
+  def hours_estimate_label(price, low_multiplier: 20, high_multiplier: 10)
+    estimate = hours_estimate_pair(price, low_multiplier:, high_multiplier:)
+    return nil unless estimate
+
+    hours_at_10x, hours_at_20x = estimate
+    hours_at_10x == hours_at_20x ? "~#{hours_at_10x}" : "~#{hours_at_10x}-#{hours_at_20x}"
+  end
+
+  def hours_estimate_pair(price, low_multiplier: 20, high_multiplier: 10)
+    return nil unless price.present? && price.to_f.positive?
+
+    base_hours = fixed_estimate(price).to_f
+    return nil unless base_hours.positive?
+
+    hours_at_10x = base_hours.ceil
+    hours_at_20x = (base_hours * (high_multiplier.to_f / low_multiplier.to_f)).ceil
+
+    [hours_at_10x, hours_at_20x]
+  end
+
   def remaining_stock
     return nil unless limited? && stock.present?
 
