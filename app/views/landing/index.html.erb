@@ -13,8 +13,6 @@
   <script>document.documentElement.classList.add('warping');</script>
 <% end %>
 
-<%= render "landing/sections/countdown_bar" %>
-
 <div data-controller="reveal-on-scroll">
   <div class="hero-header-wrapper" data-controller="hero-warp">
     <div class="hero__left-gradient" aria-hidden="true"></div>
@@ -37,7 +35,13 @@
 
     <%= render "landing/sections/weekend" %>
 
+    <%= render "landing/sections/what_is_hc" %>
+
+    <%= render "landing/sections/highlights" %>
+
     <%= render "landing/sections/done_before" %>
+
+    <%= render "landing/sections/partners" %>
 
     <%= render "landing/sections/faq" %>
 
