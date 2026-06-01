@@ -153,5 +153,8 @@ class Post::Devlog < ApplicationRecord
 
     delta = deleted_at.present? ? -1 : 1
     Project.unscoped.where(id: project_id).update_counters(devlogs_count: delta)
+
+    # Keep cached duration_seconds accurate when devlogs are soft-deleted/restored.
+    Project.unscoped.find_by(id: project_id)&.recalculate_duration_seconds!
   end
 end
