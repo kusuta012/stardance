@@ -608,6 +608,20 @@ Rails.application.routes.draw do
     get "user-perms", to: "users#user_perms"
     resource :support, only: [ :show ], controller: "support/dashboards"
     resource :fraud, only: [ :show ], controller: "fraud/dashboards"
+
+    # Referral raffle management (reads the Raffle engine's models).
+    get "raffles", to: "raffles/dashboard#show", as: :raffles
+    namespace :raffles do
+      resources :participants, only: [ :index, :show ]
+      resources :referrals, only: [ :index, :update ]
+      resources :weeks, only: [ :index, :show ] do
+        member do
+          post :close
+          post :draw_winner
+        end
+      end
+    end
+
     resource :shop, only: [ :show ], controller: "shop/dashboard"
     post "shop/clear-carousel-cache", to: "shop/dashboard#clear_carousel_cache", as: :clear_carousel_cache
     namespace :shop do

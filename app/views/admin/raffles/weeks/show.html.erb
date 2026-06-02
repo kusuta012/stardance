@@ -1,0 +1,43 @@
+<% content_for :title, "Week #{@week.number}" %>
+<%= render "admin/raffles/shared/nav" %>
+
+<h1>Week <%= @week.number %> <small>(<%= @week.status %>)</small></h1>
+
+<ul>
+  <li>Prize: <%= @week.prize %></li>
+  <li>Opened: <%= @week.opened_at&.to_date || "—" %> · Closed: <%= @week.closed_at&.to_date || "—" %></li>
+  <li>Winner:
+    <% if @week.winner_participant %>
+      <%= link_to @week.winner_participant.github_login, admin_raffles_participant_path(@week.winner_participant) %>
+    <% else %>
+      not drawn
+    <% end %>
+  </li>
+</ul>
+
+<p>
+  <%= button_to "Draw winner", draw_winner_admin_raffles_week_path(@week), method: :post,
+                data: { turbo_confirm: "Draw#{' (re-draw)' if @week.winner_participant} a winner for week #{@week.number}?" } %>
+  <% if @week.status_active? %>
+    <%= button_to "Close & open next", close_admin_raffles_week_path(@week), method: :post,
+                  data: { turbo_confirm: "Archive week #{@week.number} and open the next?" } %>
+  <% end %>
+</p>
+
+<h2>Standings</h2>
+<% if @standings.any? %>
+  <table>
+    <thead><tr><th>#</th><th>Participant</th><th>Tickets</th></tr></thead>
+    <tbody>
+      <% @standings.each_with_index do |(participant, tickets), i| %>
+        <tr>
+          <td><%= i + 1 %></td>
+          <td><%= link_to participant.github_login, admin_raffles_participant_path(participant) %></td>
+          <td><%= tickets %></td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+<% else %>
+  <p>No tickets credited to this week.</p>
+<% end %>
