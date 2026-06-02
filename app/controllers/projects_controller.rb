@@ -525,7 +525,7 @@ class ProjectsController < ApplicationController
   rescue StandardError => e
     Rails.logger.warn("URL validation error for #{attribute}: #{e.class}: #{e.message}")
     @project.errors.add(attribute, "#{name} could not be verified. Please try again or contact support if the issue persists.")
-
+  end
   def link_hackatime_projects
     # Unlink hackatime projects that were removed
     @project.hackatime_projects.where.not(id: hackatime_project_ids).find_each do |hp|
