@@ -338,10 +338,28 @@
               </div>
 
               <div class="devlog-git-section">
-                <div class="git-label">Git Activity</div>
-                <%= Certification::CommitGraphBuilder.new(
-                      @devlog_commits[devlog_review.post_devlog_id] || []
-                    ).svg %>
+                <%
+                  dl_commits = @devlog_commits[devlog_review.post_devlog_id] || []
+                  first_commit, last_commit = dl_commits.minmax_by { |c| c[:authored_at] || Time.at(0) }
+                  compare_url = if first_commit && last_commit && first_commit != last_commit
+                    first_sha = first_commit[:sha]
+                    last_sha  = last_commit[:sha]
+                    repo_base = @review.project.repo_url.to_s.chomp("/")
+                    if @repo_info&.dig(:platform) == "github"
+                      "#{repo_base}/compare/#{first_sha}...#{last_sha}"
+                    elsif @repo_info&.dig(:platform)&.include?("gitlab")
+                      "#{repo_base}/-/compare/#{first_sha}...#{last_sha}"
+                    end
+                  end
+                %>
+                <div class="git-label">
+                  <% if compare_url %>
+                    <%= link_to "Git Activity", compare_url, target: "_blank", rel: "noopener noreferrer" %>
+                  <% else %>
+                    Git Activity
+                  <% end %>
+                </div>
+                <%= Certification::CommitGraphBuilder.new(dl_commits).svg %>
               </div>
             </div>
 
