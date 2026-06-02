@@ -67,7 +67,7 @@ class ApplicationController < ActionController::Base
       scope = scope.eager_load(*Array(preloads)) if preloads.present?
       user = scope.to_a.first
 
-      if user && session[:auth_level] == "guest" && user.hca_linked?
+      if user && session[:auth_level] != "hca" && user.hca_linked?
         reset_session
         return @current_user = nil
       end
