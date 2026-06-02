@@ -400,10 +400,10 @@ class ShopItem < ApplicationRecord
 
   def required_achievement_objects
     requires_achievement.filter_map do |slug|
-      Achievement::SLUGGED.fetch(slug.to_sym) do
-        Rails.logger.warn("[ShopItem##{id}] requires unknown achievement slug: #{slug}")
-        nil
-      end
+      Achievement.find(slug)
+    rescue KeyError
+      Rails.logger.warn("[ShopItem##{id}] requires unknown achievement slug: #{slug}")
+      nil
     end
   end
 
