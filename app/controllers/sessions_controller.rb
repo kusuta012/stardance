@@ -72,7 +72,9 @@ class SessionsController < ApplicationController
       return redirect_to(root_path, alert: "No users found for dev login. Create a user first.")
     end
 
-    sign_in_user(user)
+    ensure_dev_hca_identity(user) unless params[:id].present?
+
+    sign_in_user(user, auth_level: user.hca_linked? ? "hca" : "guest")
     if Rails.env.test?
       head :ok
     else
@@ -81,6 +83,12 @@ class SessionsController < ApplicationController
   end
 
   private
+
+  def ensure_dev_hca_identity(user)
+    return if user.hca_linked?
+
+    user.create_hack_club_identity!(provider: "hack_club", uid: "dev-#{user.id}", access_token: "dev-access-token")
+  end
 
   def safe_return_to(path)
     return nil if path.blank?
