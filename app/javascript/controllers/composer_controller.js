@@ -217,7 +217,6 @@ export default class extends Controller {
     this.#previewSeconds = 0;
     if (this.hasTimeFrameTarget) {
       this.timeFrameTarget.hidden = !linked;
-      this.timeFrameTarget.removeAttribute("src");
       this.timeFrameTarget.innerHTML =
         '<span class="feed-composer__info-text">Loading time...</span>';
     }
@@ -226,15 +225,26 @@ export default class extends Controller {
       if (editUrl) this.warnTarget.href = editUrl;
     }
 
-    if (this.#composerOpen) this.#loadPreviewTime();
+    this.#loadPreviewTime();
     this.#updateSubmit();
   }
 
   #loadPreviewTime() {
     if (!this.hasTimeFrameTarget || this.timeFrameTarget.hidden) return;
     if (!this.hasPreviewTimeUrlValue) return;
-    if (this.timeFrameTarget.getAttribute("src")) return;
-    this.timeFrameTarget.setAttribute("src", this.previewTimeUrlValue);
+
+    if (this.timeFrameTarget.getAttribute("src") === this.previewTimeUrlValue) {
+      if (typeof this.timeFrameTarget.reload === "function") {
+        this.timeFrameTarget.reload();
+      } else {
+        this.timeFrameTarget.removeAttribute("src");
+        setTimeout(() => {
+          this.timeFrameTarget.setAttribute("src", this.previewTimeUrlValue);
+        }, 10);
+      }
+    } else {
+      this.timeFrameTarget.setAttribute("src", this.previewTimeUrlValue);
+    }
   }
 
   selectFiles() {
