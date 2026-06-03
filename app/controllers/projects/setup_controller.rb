@@ -59,7 +59,6 @@ class Projects::SetupController < ApplicationController
 
     project = find_or_create_setup_project!
     project.update!(title: title, description: description.presence)
-    track_event "project_created", { project_id: project.id, source: "setup" }
     redirect_to next_gate_after_details_path
   end
 
@@ -185,6 +184,7 @@ class Projects::SetupController < ApplicationController
       project.memberships.create!(user: current_user, role: :owner)
     end
     session[:setup_project_id] = project.id
+    track_event "project_created", { project_id: project.id, source: "setup" }
     project
   end
 
