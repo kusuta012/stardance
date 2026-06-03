@@ -234,14 +234,7 @@ export default class extends Controller {
     if (!this.hasPreviewTimeUrlValue) return;
 
     if (this.timeFrameTarget.getAttribute("src") === this.previewTimeUrlValue) {
-      if (typeof this.timeFrameTarget.reload === "function") {
-        this.timeFrameTarget.reload();
-      } else {
-        this.timeFrameTarget.removeAttribute("src");
-        setTimeout(() => {
-          this.timeFrameTarget.setAttribute("src", this.previewTimeUrlValue);
-        }, 10);
-      }
+      this.timeFrameTarget.reload();
     } else {
       this.timeFrameTarget.setAttribute("src", this.previewTimeUrlValue);
     }
