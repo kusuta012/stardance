@@ -21,9 +21,6 @@
     <%= button_to "Close week #{@current_week.number} & open next",
                   close_admin_raffles_week_path(@current_week), method: :post,
                   data: { turbo_confirm: "Archive week #{@current_week.number} and open the next week? Pending referrals carry over." } %>
-    <%= button_to "Draw winner for week #{@current_week.number}",
-                  draw_winner_admin_raffles_week_path(@current_week), method: :post,
-                  data: { turbo_confirm: "Draw a winner for week #{@current_week.number}?" } %>
   </p>
 <% end %>
 

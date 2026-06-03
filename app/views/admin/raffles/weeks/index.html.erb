@@ -5,7 +5,7 @@
 
 <table>
   <thead>
-    <tr><th>Week</th><th>Status</th><th>Prize</th><th>Opened</th><th>Closed</th><th>Winner</th><th>Actions</th></tr>
+    <tr><th>Week</th><th>Status</th><th>Prize</th><th>Opened</th><th>Closed</th><th>Actions</th></tr>
   </thead>
   <tbody>
     <% @weeks.each do |week| %>
@@ -15,7 +15,6 @@
         <td><%= week.prize %></td>
         <td><%= week.opened_at&.to_date || "—" %></td>
         <td><%= week.closed_at&.to_date || "—" %></td>
-        <td><%= week.winner_participant&.github_login || "—" %></td>
         <td>
           <% if week.status_active? %>
             <%= button_to "Close & open next", close_admin_raffles_week_path(week), method: :post,

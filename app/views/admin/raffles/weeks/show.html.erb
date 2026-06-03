@@ -6,23 +6,14 @@
 <ul>
   <li>Prize: <%= @week.prize %></li>
   <li>Opened: <%= @week.opened_at&.to_date || "—" %> · Closed: <%= @week.closed_at&.to_date || "—" %></li>
-  <li>Winner:
-    <% if @week.winner_participant %>
-      <%= link_to @week.winner_participant.github_login, admin_raffles_participant_path(@week.winner_participant) %>
-    <% else %>
-      not drawn
-    <% end %>
-  </li>
 </ul>
 
-<p>
-  <%= button_to "Draw winner", draw_winner_admin_raffles_week_path(@week), method: :post,
-                data: { turbo_confirm: "Draw#{' (re-draw)' if @week.winner_participant} a winner for week #{@week.number}?" } %>
-  <% if @week.status_active? %>
+<% if @week.status_active? %>
+  <p>
     <%= button_to "Close & open next", close_admin_raffles_week_path(@week), method: :post,
                   data: { turbo_confirm: "Archive week #{@week.number} and open the next?" } %>
-  <% end %>
-</p>
+  </p>
+<% end %>
 
 <h2>Standings</h2>
 <% if @standings.any? %>

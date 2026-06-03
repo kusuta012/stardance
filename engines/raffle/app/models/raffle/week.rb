@@ -1,12 +1,11 @@
 module Raffle
   # One weekly raffle cycle (1 GPU each, 16 total). Exactly one is active at a
-  # time (enforced by a partial unique index). Reset/draw are manual admin acts.
+  # time (enforced by a partial unique index). Closing a week is a manual admin act.
   class Week < ApplicationRecord
     has_paper_trail
 
     has_many :credited_referrals, class_name: "Raffle::Referral",
              foreign_key: :credited_week_id, dependent: :nullify, inverse_of: :credited_week
-    belongs_to :winner_participant, class_name: "Raffle::Participant", optional: true
 
     enum :status, { active: "active", archived: "archived" }, prefix: :status
 

@@ -7,8 +7,6 @@ module Raffle
     has_paper_trail
 
     has_many :referrals, class_name: "Raffle::Referral", dependent: :destroy
-    has_many :won_weeks, class_name: "Raffle::Week",
-             foreign_key: :winner_participant_id, dependent: :nullify, inverse_of: :winner_participant
 
     before_validation :assign_code, on: :create
 

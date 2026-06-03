@@ -687,10 +687,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_02_221630) do
     t.string "prize", default: "AMD RX 9060 XT", null: false
     t.string "status", default: "active", null: false
     t.datetime "updated_at", null: false
-    t.bigint "winner_participant_id"
     t.index ["number"], name: "index_raffle_weeks_on_number", unique: true
     t.index ["status"], name: "index_raffle_weeks_one_active", unique: true, where: "((status)::text = 'active'::text)"
-    t.index ["winner_participant_id"], name: "index_raffle_weeks_on_winner_participant_id"
   end
 
   create_table "report_review_tokens", force: :cascade do |t|
@@ -1285,7 +1283,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_02_221630) do
   add_foreign_key "raffle_referrals", "raffle_participants", column: "participant_id"
   add_foreign_key "raffle_referrals", "raffle_weeks", column: "credited_week_id"
   add_foreign_key "raffle_referrals", "users", column: "referred_user_id"
-  add_foreign_key "raffle_weeks", "raffle_participants", column: "winner_participant_id"
   add_foreign_key "report_review_tokens", "project_reports", column: "report_id"
   add_foreign_key "rsvp_games", "rsvps"
   add_foreign_key "rsvp_replies", "rsvps"

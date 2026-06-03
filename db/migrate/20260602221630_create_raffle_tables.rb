@@ -19,7 +19,6 @@ class CreateRaffleTables < ActiveRecord::Migration[8.1]
       t.string :status, null: false, default: "active"
       t.datetime :opened_at
       t.datetime :closed_at
-      t.references :winner_participant, foreign_key: { to_table: :raffle_participants }
       t.string :prize, null: false, default: "AMD RX 9060 XT"
 
       t.timestamps

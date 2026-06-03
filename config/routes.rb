@@ -617,7 +617,6 @@ Rails.application.routes.draw do
       resources :weeks, only: [ :index, :show ] do
         member do
           post :close
-          post :draw_winner
         end
       end
     end
