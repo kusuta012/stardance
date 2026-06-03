@@ -2,7 +2,12 @@
   decision = local_assigns.fetch(:decision) { post.postable }
   project = local_assigns.fetch(:project) { post.project }
   approved = decision.approved?
-  title = approved ? "Approved" : "Returned for changes"
+  title = approved ? "Project certified" : "Returned for changes"
+  message = if approved
+    "This ship is approved and ready for voting."
+  else
+    "This ship needs updates before it can continue."
+  end
   decided_on = decision.decided_on || post.created_at
   reviewer_name = decision.reviewer&.display_name.presence
 %>
@@ -13,48 +18,52 @@
            "ship-decision-card",
            "ship-decision-card--#{decision.verdict}"
          ) %>">
-  <header class="ship-decision-card__header">
-    <p class="ship-decision-card__label">
-      <%= inline_svg_tag "icons/ship.svg", class: "ship-decision-card__label-icon" %>
-      <span>Shipwright Verdict</span>
-      <span class="ship-decision-card__info"
-            tabindex="0"
-            aria-label="Who are Shipwrights?"
-            data-controller="tooltip"
-            data-tooltip-title-value="Who are Shipwrights?"
-            data-tooltip-message-value="Shipwrights review submitted ships for quality, working demos, clear writeups, and program rules before projects move forward."
-            data-tooltip-position-value="top">?</span>
-    </p>
-
-    <time class="ship-decision-card__time"
-          datetime="<%= decided_on.iso8601 %>"
-          title="<%= l(decided_on, format: :long) %>">
-      <%= time_ago_in_words(decided_on) %>
-    </time>
-  </header>
-
-  <div class="ship-decision-card__body">
-    <h2 class="ship-decision-card__title"><%= title %></h2>
-    <p class="ship-decision-card__meta">
-      <% if reviewer_name %>
-        <span>by</span>
-        <%= link_to "@#{reviewer_name}",
-                    profile_path(reviewer_name),
-                    class: "ship-decision-card__link",
-                    data: { turbo_frame: "_top" } %>
-      <% else %>
-        <span>by a Shipwright</span>
-      <% end %>
-      <span>on</span>
-      <%= link_to project.title,
-                  project_path(project),
-                  class: "ship-decision-card__link",
-                  data: { turbo_frame: "_top" } %>
-    </p>
+  <div class="ship-decision-card__flag">
+    <%= inline_svg_tag "icons/ship.svg", class: "ship-decision-card__flag-icon" %>
+    <span>Shipwright Verdict</span>
+    <span class="ship-decision-card__info"
+          tabindex="0"
+          aria-label="Who are Shipwrights?"
+          data-controller="tooltip"
+          data-tooltip-title-value="Who are Shipwrights?"
+          data-tooltip-message-value="Shipwrights review submitted ships for quality, working demos, clear writeups, and program rules before projects move forward."
+          data-tooltip-position-value="top">?</span>
+    <span class="status-pill status-pill--<%= decision.verdict %>"><%= decision.verdict.capitalize %></span>
   </div>
+
+  <header class="ship-decision-card__main">
+    <span class="ship-decision-card__mark" aria-hidden="true">
+      <%= inline_svg_tag "icons/ship.svg", class: "ship-decision-card__mark-icon" %>
+    </span>
+
+    <div class="ship-decision-card__content">
+      <h2 class="ship-decision-card__title"><%= title %></h2>
+      <p class="ship-decision-card__meta">
+        <span>on</span>
+        <%= link_to project.title,
+                    project_path(project),
+                    class: "ship-decision-card__project",
+                    data: { turbo_frame: "_top" } %>
+        <time datetime="<%= decided_on.iso8601 %>" title="<%= l(decided_on, format: :long) %>">
+          · <%= time_ago_in_words(decided_on) %>
+        </time>
+      </p>
+      <% if reviewer_name %>
+        <p class="ship-decision-card__reviewer">
+          <span>Reviewed by</span>
+          <%= link_to "@#{reviewer_name}",
+                      profile_path(reviewer_name),
+                      class: "ship-decision-card__reviewer-link",
+                      data: { turbo_frame: "_top" } %>
+        </p>
+      <% end %>
+      <p class="ship-decision-card__message"><%= message %></p>
+    </div>
+  </header>
 
   <% if decision.feedback.present? %>
     <section class="ship-decision-card__feedback" aria-label="Shipwright feedback">
+      <p class="ship-decision-card__feedback-label">Shipwright feedback</p>
       <div class="ship-decision-card__feedback-body">
         <%= simple_format(decision.feedback, {}, sanitize: true) %>
       </div>
