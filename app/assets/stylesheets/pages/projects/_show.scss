@@ -698,6 +698,7 @@ turbo-frame#project_hero {
 
   .action-btn {
     flex: 1;
+    text-align: center;
   }
 
   // Some buttons in this row use button_to (Hackatime + test) because Turbo
@@ -1354,6 +1355,8 @@ turbo-frame#project_hero {
   left: 50%;
   translate: -50% -50%;
   margin: 0;
+  max-height: 90vh;
+  overflow-y: auto;
   color: var(--color-space-text);
 
   &::backdrop {
@@ -1371,11 +1374,9 @@ turbo-frame#project_hero {
   display: flex;
   flex-direction: column;
   gap: var(--space-m);
-  max-height: 90vh;
-  overflow-y: auto;
   padding: var(--space-l) var(--space-l) calc(var(--space-l) + 4px);
-  background: var(--color-space-bg-2, #0d0b2e);
-  border: 1px solid var(--color-space-border);
+  background: #847f78;
+  border: 1px solid var(--color-brand-highlight);
   border-radius: var(--border-radius);
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
 }
@@ -1405,10 +1406,21 @@ turbo-frame#project_hero {
   gap: var(--space-m);
 }
 
-.ship-modal__mission {
+.ship-modal__mission-card {
   padding: var(--space-m) var(--space-l);
-  background: var(--color-set-2-bg);
+  background: var(--color-set-1-bg);
+  border: 1px solid var(--color-space-border);
   border-radius: var(--border-radius);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+  color: var(--color-space-text);
+}
+
+.ship-modal__mission-ack {
+  display: flex;
+  gap: var(--space-xs);
+  align-items: flex-start;
+  font-size: var(--font-body);
+  cursor: pointer;
 }
 
 .ship-modal__mission-heading {
@@ -1427,23 +1439,14 @@ turbo-frame#project_hero {
   color: var(--color-space-text-muted);
 }
 
-.ship-modal__mission-ack {
-  display: flex;
-  gap: var(--space-xs);
-  align-items: flex-start;
-  margin-top: var(--space-s);
-  font-size: var(--font-body);
-  cursor: pointer;
-}
-
 // Editable body inside the ship-card preview — matches the card's other text.
 .ship-modal__textarea {
   width: 100%;
   min-height: 96px;
   padding: 8px 12px;
-  border: 2px solid var(--color-border-input);
+  border: 2px solid rgba(255, 255, 255, 0.15);
   border-radius: var(--profile-radius);
-  background: transparent;
+  background: rgba(0, 0, 0, 0.15);
   color: var(--color-space-text);
   font: inherit;
   font-size: 1.1875rem;
@@ -1452,11 +1455,11 @@ turbo-frame#project_hero {
   outline: none;
 
   &::placeholder {
-    color: hsla(0, 0%, 100%, 0.5);
+    color: rgba(255, 255, 255, 0.45);
   }
 
   &:focus {
-    border-color: var(--color-border-input-focus);
+    border-color: var(--color-brand-highlight);
   }
 }
 
@@ -1472,8 +1475,8 @@ turbo-frame#project_hero {
   justify-content: center;
   padding: 8px 18px;
   border-radius: 999px;
-  border: 2px solid var(--color-set-3-bg);
-  background: var(--color-set-2-bg);
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.1);
   color: var(--color-space-text);
   font-family: inherit;
   font-size: var(--font-size-base);
@@ -1505,47 +1508,36 @@ turbo-frame#project_hero {
   }
 }
 
-// Override feed-composer styles for ship modal
-.ship-modal {
-  .feed-composer__attach {
-    margin: 0;
-    border-color: var(--color-space-text-muted);
-    background: transparent;
-  }
+// Feed-composer overrides scoped to ship modal — the modal reuses the
+// composer's markup (data-composer-target) but needs tighter spacing.
+.ship-modal .feed-composer__attach {
+  margin: 0;
+  border-color: rgba(255, 255, 255, 0.15);
+  background: transparent;
+}
 
-  .feed-composer__grid {
-    padding-left: 0;
-  }
+.ship-modal .feed-composer__grid {
+  padding-left: 0;
+}
 
-  .project-show__latest-ship {
-    background: transparent;
-  }
+.ship-modal__preview {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
 
-  .ship-modal__textarea {
-    background: transparent;
-    border-color: var(--color-space-border);
-  }
+.ship-modal__preview-body {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+}
 
-  .ship-modal__preview {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    padding: 4px;
-  }
-
-  .project-show__latest-ship-body {
-    display: flex;
-    align-items: flex-start;
-    gap: 4px;
-  }
-
-  .project-show__latest-ship-content {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    flex: 1;
-    min-width: 0;
-  }
+.ship-modal__preview-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
 }
 
 .project-show__hackatime-picker {

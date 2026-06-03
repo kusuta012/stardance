@@ -730,45 +730,51 @@
         an editable textarea, and "Ship!" submits straight to ships#create. %>
     <dialog id="ship-post-modal-<%= @project.id %>"
             class="ship-modal ship-modal--post"
-            data-controller="modal"
+            data-controller="modal composer"
+            data-composer-max-files-value="<%= Post::ShipEvent::MAX_ATTACHMENTS %>"
+            data-composer-simple-mode-value="true"
+            data-composer-target="dropZone"
+            data-action="drop->composer#drop dragover->composer#dragover dragleave->composer#dragleave"
             aria-label="Ship your project">
-      <div class="ship-modal__panel">
-        <%= form_with url: project_ships_path(@project),
-                      method: :post,
-                      data: { turbo: false },
-                      html: { class: "ship-modal__form" } do |form| %>
-          <% ship_mission = @project.current_mission %>
-          <% ship_to_mission = ship_mission && !@project.shipped_to_mission?(ship_mission) %>
-          <% if ship_to_mission %>
-            <div class="ship-modal__mission">
-              <p class="ship-modal__mission-heading">
-                Shipping to <strong><%= ship_mission.name %></strong>
-              </p>
-              <%= hidden_field_tag :mission_payout_path, "static_prize" %>
-              <% if ship_mission.submission_guide.present? %>
-                <div class="ship-modal__mission-guide">
-                  <%= render MarkdownContentComponent.new(markdown: ship_mission.submission_guide, flavor: :guide) %>
-                </div>
-                <label class="ship-modal__mission-ack">
-                  <%= check_box_tag :mission_submission_guide_acknowledged, "1", false, required: true %>
-                  <span>This project meets all of the above mission guidelines</span>
-                </label>
-              <% end %>
-            </div>
-          <% end %>
+      <% ship_mission = @project.current_mission %>
+      <% ship_to_mission = ship_mission && !@project.shipped_to_mission?(ship_mission) %>
 
-          <article class="project-show__latest-ship ship-modal__preview">
+      <%= form_with url: project_ships_path(@project),
+                    method: :post,
+                    multipart: true,
+                    data: { turbo: false, action: "paste->composer#paste" },
+                    html: { class: "ship-modal__form" } do |form| %>
+        <% if ship_to_mission %>
+          <div class="ship-modal__mission-card">
+            <p class="ship-modal__mission-heading">
+              Shipping to <strong><%= ship_mission.name %></strong>
+            </p>
+            <%= hidden_field_tag :mission_payout_path, "static_prize" %>
+            <% if ship_mission.submission_guide.present? %>
+              <div class="ship-modal__mission-guide">
+                <%= render MarkdownContentComponent.new(markdown: ship_mission.submission_guide, flavor: :guide) %>
+              </div>
+              <label class="ship-modal__mission-ack">
+                <%= check_box_tag :mission_submission_guide_acknowledged, "1", false, required: true %>
+                <span>I confirm my project meets the mission guidelines above</span>
+              </label>
+            <% end %>
+          </div>
+        <% end %>
+
+        <div class="ship-modal__panel">
+          <article class="ship-modal__preview">
             <header class="project-show__latest-ship-label">
               <%= inline_svg_tag "icons/sticker.svg", class: "project-show__latest-ship-icon" %>
               <span>Ship</span>
             </header>
 
-            <div class="project-show__latest-ship-body">
+            <div class="ship-modal__preview-body">
               <div class="project-show__latest-ship-avatar">
                 <%= image_tag current_user.avatar, alt: current_user.display_name, class: "project-show__avatar project-show__avatar--lg" %>
               </div>
 
-              <div class="project-show__latest-ship-content">
+              <div class="ship-modal__preview-content">
                 <p class="project-show__latest-ship-heading">
                   <span class="project-show__latest-ship-author">@<%= current_user.display_name %></span>
                   <span class="project-show__latest-ship-on">on</span>
@@ -782,7 +788,24 @@
                       required: true,
                       maxlength: Post::ShipEvent::BODY_MAX_LENGTH,
                       placeholder: "What did you make? What was challenging? What are you proud of? What should people know so they can test your project?",
-                      aria: { label: "Ship update" } %>
+                      aria: { label: "Ship update" },
+                      data: { composer_target: "textarea",
+                              action: "input->composer#autogrow input->composer#refreshSubmit" } %>
+
+                <div class="feed-composer__attach-wrap feed-composer__attach-wrap--expanded" data-composer-target="attachWrap">
+                  <label class="feed-composer__attach">
+                    <%= inline_svg_tag "icons/paper.svg", class: "feed-composer__attach-icon" %>
+                    <span class="feed-composer__attach-text">Add a screenshot of your project in action!</span>
+                    <%= file_field_tag "ship_event[attachments][]",
+                          multiple: true,
+                          accept: Post::ShipEvent::ACCEPTED_CONTENT_TYPES.join(","),
+                          class: "feed-composer__file-input",
+                          required: true,
+                          data: { composer_target: "fileInput", action: "change->composer#selectFiles" } %>
+                  </label>
+                </div>
+
+                <div class="feed-composer__grid" data-composer-target="grid" data-count="0" hidden></div>
 
                 <ul class="project-show__latest-ship-stats" aria-label="Project totals">
                   <li class="profile-project-card__meta-item">
@@ -829,10 +852,10 @@
                     onclick="document.getElementById('ship-post-modal-' + <%= @project.id.to_json %>).close()">
               Cancel
             </button>
-            <%= form.submit "Ship!", class: "ship-modal__btn ship-modal__btn--primary", data: { disable_with: "Shipping…" } %>
+            <%= form.submit "Ship!", class: "ship-modal__btn ship-modal__btn--primary", data: { disable_with: "Shipping…", composer_target: "submit" } %>
           </div>
-        <% end %>
-      </div>
+        </div>
+      <% end %>
     </dialog>
   <% end %>
 
