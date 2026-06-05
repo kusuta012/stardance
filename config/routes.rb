@@ -420,6 +420,15 @@
 #   rails_performance_resources GET  /resources(.:format)    rails_performance/rails_performance#resources
 
 Rails.application.routes.draw do
+  # Raffle — an independent, GitHub-login app on the `raffle.` subdomain. Mounted
+  # first so raffle-host requests (incl. /auth/github/callback) resolve here
+  # before the platform's generic auth route and the `/:ref` catch-all below.
+  constraints(->(req) { req.host.to_s.start_with?("raffle.") }) do
+    mount Raffle::Engine, at: "/", as: :raffle_engine
+  end
+
+  delete "dismiss_raffle_banner", to: "sessions#dismiss_raffle_banner", as: :dismiss_raffle_banner
+
   # Sitemap
   get "sitemap.xml", to: "sitemaps#index", as: :sitemap, defaults: { format: :xml }
 
@@ -558,6 +567,7 @@ Rails.application.routes.draw do
 
   namespace :admin, constraints: AdminConstraint do
     root to: "application#index"
+    resource :funnel, only: [ :show ], controller: "funnel"
 
     mount Blazer::Engine, at: "blazer", constraints: ->(request) {
       AdminConstraint.allow?(request, :access_blazer?)
@@ -601,6 +611,20 @@ Rails.application.routes.draw do
     get "user-perms", to: "users#user_perms"
     resource :support, only: [ :show ], controller: "support/dashboards"
     resource :fraud, only: [ :show ], controller: "fraud/dashboards"
+
+    # Referral raffle management (reads the Raffle engine's models).
+    get "raffles", to: "raffles/dashboard#show", as: :raffles
+    namespace :raffles do
+      resources :participants, only: [ :index, :show ]
+      resources :referrals, only: [ :index, :update ]
+      resources :weeks, only: [ :index, :show ] do
+        member do
+          post :close
+          post :draw
+        end
+      end
+    end
+
     resource :shop, only: [ :show ], controller: "shop/dashboard"
     post "shop/clear-carousel-cache", to: "shop/dashboard#clear_carousel_cache", as: :clear_carousel_cache
     namespace :shop do
@@ -690,12 +714,18 @@ Rails.application.routes.draw do
     end
 
     namespace :certification do
+      # Reviewer stats & payout requests
+      scope "/ship" do
+        get  "mystats", to: "mystats#show", as: "mystats"
+        post "mystats/payout_request", to: "mystats#create_payout_request", as: "mystats_payout_request"
+      end
+
       resources :ships, path: "ship", only: [ :index, :show, :update ] do
         collection do
           get :next
         end
-        member do
-          post :claim
+        scope module: :ships do
+          resource :claim, only: [ :create, :destroy ]
         end
       end
 
@@ -708,6 +738,14 @@ Rails.application.routes.draw do
       get "review/:id/commits", to: "ysws#commits", as: "ysws_commits"
       post "review/:id/report_fraud", to: "ysws#report_fraud", as: "ysws_report_fraud"
       post "review/:id/complete", to: "ysws#complete", as: "complete_ysws_review"
+
+      # Admin payout management
+      resources :payouts, only: [ :index, :show ] do
+        member do
+          post :pay
+          post :reject
+        end
+      end
     end
   end
 
@@ -745,6 +783,7 @@ Rails.application.routes.draw do
     resource :ships, only: [ :create ], module: :projects
     resource :mission, only: [ :create, :destroy ], module: :projects, controller: "missions"
     resource :magic, only: [ :create, :destroy ], module: :projects, controller: "magic"
+    resource :fire_nomination, only: [ :create, :destroy ], module: :projects
     resources :mission_section_completions,
               only: [ :create, :destroy ],
               module: :projects,
@@ -753,6 +792,7 @@ Rails.application.routes.draw do
       get :readme
       post :follow
       delete :unfollow
+      get :followers
     end
   end
 

@@ -2,38 +2,42 @@
 #
 # Table name: projects
 #
-#  id                 :bigint           not null, primary key
-#  ai_declaration     :text
-#  deleted_at         :datetime
-#  demo_url           :text
-#  description        :text
-#  devlogs_count      :integer          default(0), not null
-#  duration_seconds   :integer          default(0), not null
-#  marked_fire_at     :datetime
-#  memberships_count  :integer          default(0), not null
-#  project_categories :string           default([]), is an Array
-#  project_type       :string
-#  readme_url         :text
-#  repo_url           :text
-#  ship_status        :string           default("draft")
-#  shipped_at         :datetime
-#  synced_at          :datetime
-#  title              :string           not null
-#  tutorial           :boolean          default(FALSE), not null
-#  update_description :text
-#  created_at         :datetime         not null
-#  updated_at         :datetime         not null
-#  fire_letter_id     :string
-#  marked_fire_by_id  :bigint
+#  id                   :bigint           not null, primary key
+#  ai_declaration       :text
+#  deleted_at           :datetime
+#  demo_url             :text
+#  description          :text
+#  devlogs_count        :integer          default(0), not null
+#  duration_seconds     :integer          default(0), not null
+#  marked_fire_at       :datetime
+#  memberships_count    :integer          default(0), not null
+#  nominated_fire_at    :datetime
+#  project_categories   :string           default([]), is an Array
+#  project_type         :string
+#  readme_url           :text
+#  repo_url             :text
+#  ship_status          :string           default("draft")
+#  shipped_at           :datetime
+#  synced_at            :datetime
+#  title                :string           not null
+#  tutorial             :boolean          default(FALSE), not null
+#  update_description   :text
+#  created_at           :datetime         not null
+#  updated_at           :datetime         not null
+#  fire_letter_id       :string
+#  marked_fire_by_id    :bigint
+#  nominated_fire_by_id :bigint
 #
 # Indexes
 #
-#  index_projects_on_deleted_at         (deleted_at)
-#  index_projects_on_marked_fire_by_id  (marked_fire_by_id)
+#  index_projects_on_deleted_at            (deleted_at)
+#  index_projects_on_marked_fire_by_id     (marked_fire_by_id)
+#  index_projects_on_nominated_fire_by_id  (nominated_fire_by_id)
 #
 # Foreign Keys
 #
 #  fk_rails_...  (marked_fire_by_id => users.id)
+#  fk_rails_...  (nominated_fire_by_id => users.id)
 #
 require "net/http"
 
@@ -78,6 +82,7 @@ class Project < ApplicationRecord
       .order(ActiveStorage::Attachment.arel_table[:id].eq(nil).asc)
   }
   belongs_to :marked_fire_by, class_name: "User", optional: true
+  belongs_to :nominated_fire_by, class_name: "User", optional: true
 
   has_many :memberships, class_name: "Project::Membership", dependent: :destroy
   has_many :users, through: :memberships
@@ -219,18 +224,19 @@ class Project < ApplicationRecord
     hackatime_uid = memberships.owner.first&.user&.hackatime_identity&.uid
     return 0 unless hackatime_uid
 
-    total_seconds = HackatimeService.fetch_total_seconds_for_projects(hackatime_uid, hackatime_keys)
+    total_seconds = HackatimeService.fetch_total_seconds_for_projects(hackatime_uid, hackatime_keys, access_token: memberships.owner.first&.user&.hackatime_identity&.access_token)
     return 0 unless total_seconds
 
     (total_seconds / 3600.0).round(1)
   end
 
-  def seconds_coded_in_devlog_window(hackatime_uid, at: Time.current)
+  def seconds_coded_in_devlog_window(hackatime_uid, at: Time.current, access_token: nil)
     HackatimeService.fetch_total_seconds_for_projects(
       hackatime_uid,
       hackatime_keys,
       start_date: devlog_window_start(at).iso8601,
-      end_date: at.iso8601
+      end_date: at.iso8601,
+      access_token: access_token
     )
   end
 
@@ -471,6 +477,10 @@ class Project < ApplicationRecord
     marked_fire_at.present?
   end
 
+  def fire_nomination_pending?
+    nominated_fire_at.present? && marked_fire_at.nil?
+  end
+
   def readme_is_raw_github_url?
     return false if readme_url.blank?
 
@@ -502,20 +512,48 @@ class Project < ApplicationRecord
     last_ship_at.present? && last_ship_at > last_devlog_at
   end
 
-  # Public so ProjectUrlProbeService can probe demo/repo URLs on re-ship. The
-  # HTTP helpers it leans on stay private below.
-  def url_reachable?(url)
-    cache_key = "url_reachable_#{Digest::MD5.hexdigest(url)}"
-    Rails.cache.fetch(cache_key, expires_in: 5.minutes) do
-      response = SafeUrl.safe_head(url)
-      response.is_a?(Net::HTTPSuccess) || response.is_a?(Net::HTTPRedirection)
+  PROBE_SKIP_DOMAINS = %w[
+    npmjs.com
+    crates.io
+    curseforge.com
+    makerworld.com
+    streamlit.app
+  ].freeze
+
+  # Public so ProjectUrlProbeService and the controller can probe URLs.
+  # Returns the HTTP status code (int), nil for allowlisted domains.
+  def url_probe_status(url, cache: true)
+    uri = URI.parse(url)
+    return nil if PROBE_SKIP_DOMAINS.any? { |d| uri.host&.end_with?(d) }
+
+    if cache
+      Rails.cache.fetch("url_probe_v2_#{Digest::MD5.hexdigest(url)}", expires_in: 5.minutes) do
+        do_url_probe(url)
+      end
+    else
+      do_url_probe(url)
     end
+  end
+
+  def url_reachable?(url)
+    status = url_probe_status(url)
+    status.nil? || (200..299).cover?(status)
   rescue SafeUrl::Error, URI::InvalidURIError, SocketError, Errno::ECONNREFUSED,
          Errno::EHOSTUNREACH, Net::OpenTimeout, Net::ReadTimeout, OpenSSL::SSL::SSLError
     false
   end
 
   private
+
+  def do_url_probe(url)
+    response = SafeUrl.safe_get(
+      url,
+      headers: { "User-Agent" => "Stardance project validator (https://stardance.hackclub.com/)" },
+      open_timeout: 5,
+      read_timeout: 5
+    )
+    response.code.to_i
+  end
 
   def devlog_window_start(at)
     previous_devlog = devlogs.where("post_devlogs.created_at < ?", at).order("post_devlogs.created_at desc").first

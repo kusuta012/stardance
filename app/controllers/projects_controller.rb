@@ -1,7 +1,7 @@
 class ProjectsController < ApplicationController
   # Mission + payout-votes render as discover-rail modules on the project page.
   # The expanded mission module also previews the next guide step.
-  discover_rail_widgets :project_mission_expanded, :ship_intro, :payout_votes,
+  discover_rail_widgets :project_mission_expanded, :mission_browse, :ship_intro, :payout_votes,
                         context: -> { { project: @project, votes_for_payout: @votes_for_payout } }
 
   before_action :set_project_minimal, only: [ :edit, :update, :destroy ]
@@ -98,6 +98,23 @@ class ProjectsController < ApplicationController
 
     @show_project_onboarding = @is_member && @posts.empty?
     @project_onboarding_mission = @project.current_mission
+
+    @available_missions = if @is_member && @project.current_mission.nil? && !@project.shipped?
+      taken_mission_ids = current_user.projects
+                                      .where(deleted_at: nil)
+                                      .joins(:mission_attachments)
+                                      .where(project_mission_attachments: { detached_at: nil, deleted_at: nil })
+                                      .pluck("project_mission_attachments.mission_id")
+                                      .uniq
+      Mission.available
+             .where.not(id: taken_mission_ids)
+             .with_attached_icon
+             .order(featured_at: :desc)
+             .limit(12)
+             .to_a
+    else
+      []
+    end
 
     @show_project_tour = params[:welcome] == "1" && current_user.present? && @is_member &&
                          current_user.projects.count == 1 && !session[:project_tour_seen]
@@ -340,7 +357,7 @@ class ProjectsController < ApplicationController
     follow = current_user.project_follows.build(project: @project)
     if follow.save
       @project.users.includes(:preference).each do |member|
-        if member.preference.send_notifications_for_new_followers && current_user.slack_id && member.slack_id
+        if member.preference&.send_notifications_for_new_followers && current_user.slack_id && member.slack_id
           SendSlackDmJob.perform_later(
             member.slack_id,
             "#{current_user.display_name} is now following your project #{@project.title}!",
@@ -369,6 +386,13 @@ class ProjectsController < ApplicationController
     else
       redirect_to project_path(@project), alert: "Could not unfollow."
     end
+  end
+
+  def followers
+    @project = Project.find(params[:id])
+    authorize @project, :show?
+    @followers = @project.followers.order(:display_name)
+    render "users/followers", layout: false
   end
 
   def readme
@@ -435,15 +459,6 @@ class ProjectsController < ApplicationController
     validate_url_not_dead(:readme_url, "Readme URL") if @project.readme_url.present? && @project.errors.empty?
   end
 
-  # these links block automated requests, but we're ok with just assuming they're good
-  ALLOWLISTED_DOMAINS = %w[
-    npmjs.com
-    crates.io
-    curseforge.com
-    makerworld.com
-    streamlit.app
-  ].freeze
-
   def validate_url_not_dead(attribute, name)
     require "uri"
 
@@ -451,20 +466,8 @@ class ProjectsController < ApplicationController
 
     uri = URI.parse(@project.send(attribute))
 
-    if ALLOWLISTED_DOMAINS.any? { |domain| uri.host&.end_with?(domain) }
-      return
-    end
-
-    # Pinned probe: resolves+verifies the host and connects to that exact IP, so
-    # the address we vetted is the one we hit even across redirects. This is the
-    # SSRF-safe path the model's url_reachable? already uses — keep both on it.
-    response = SafeUrl.safe_get(
-      uri.to_s,
-      headers: { "User-Agent" => "Stardance project validator (https://stardance.hackclub.com/)" },
-      open_timeout: 5,
-      read_timeout: 5
-    )
-    status = response.code.to_i
+    status = @project.url_probe_status(@project.send(attribute), cache: false)
+    return if status.nil?
 
     unless (200..299).cover?(status)
       @project.errors.add(attribute, "Your #{name} needs to return a 200 status. I got #{status}, is your code/website set to public!?!?")
