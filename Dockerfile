@@ -57,6 +57,7 @@ RUN apt-get update -qq && \
 # Install Node.js and enable Corepack for Yarn Berry
 RUN apt-get update -qq && \
     apt-get install --no-install-recommends -y nodejs npm && \
+    npm install -g corepack && \
     corepack enable && \
     rm -rf /var/lib/apt/lists /var/cache/apt/archives
 
