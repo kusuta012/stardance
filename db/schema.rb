@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_04_201158) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_05_203545) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "vector"
@@ -1142,6 +1142,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_04_201158) do
 
   create_table "users", force: :cascade do |t|
     t.string "age_attestation"
+    t.integer "approx_balance", default: 0, null: false
+    t.integer "approx_total_earned", default: 0, null: false
     t.boolean "banned", default: false, null: false
     t.datetime "banned_at"
     t.text "banned_reason"
@@ -1187,6 +1189,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_04_201158) do
     t.boolean "ysws_eligible", default: false, null: false
     t.index "lower((display_name)::text)", name: "index_users_on_lower_display_name_unique", unique: true, where: "((display_name IS NOT NULL) AND ((display_name)::text <> ''::text))"
     t.index "lower((email)::text)", name: "index_users_on_lower_email_unique", unique: true, where: "((email IS NOT NULL) AND ((email)::text <> ''::text))"
+    t.index ["approx_balance"], name: "index_users_on_approx_balance", order: :desc
+    t.index ["approx_total_earned"], name: "index_users_on_approx_total_earned", order: :desc
     t.index ["email"], name: "index_users_on_email"
     t.index ["onboarded_at"], name: "index_users_on_onboarded_at"
     t.index ["session_token"], name: "index_users_on_session_token", unique: true
