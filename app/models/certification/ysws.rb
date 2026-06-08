@@ -6,7 +6,7 @@
 #  airtable_synced_at    :datetime
 #  approved_minutes      :integer
 #  demo_checked_at       :datetime
-#  in_unified_db         :boolean          default(FALSE), not null
+#  in_unified_db         :string
 #  original_minutes      :integer
 #  repo_checked_at       :datetime
 #  reviewed_at           :datetime
@@ -67,9 +67,9 @@ module Certification
 
       table = Norairrecord.table(api_key, base_id, tbl_name)
       record = table.all(filter: "{review_id} = '#{id}'").first
-      already_in_db = record.present? && record["Automation - YSWS Record ID"].present?
+      unified_record_id = record&.dig("Automation - YSWS Record ID").presence
 
-      update_column(:in_unified_db, already_in_db) if in_unified_db != already_in_db
+      update_column(:in_unified_db, unified_record_id) if unified_record_id.present? && in_unified_db != unified_record_id
     rescue Faraday::Error => e
       Rails.logger.warn "[Certification::Ysws] Could not check unified DB status for ##{id}: #{e.message}"
     end

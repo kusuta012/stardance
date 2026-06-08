@@ -171,6 +171,13 @@ class Admin::Certification::YswsController < Admin::Certification::ApplicationCo
     @review = ::Certification::Ysws.includes(:devlog_reviews).find(params[:id])
     authorize @review, :update?
 
+    @review.check_and_update_unified_db_status!
+
+    if @review.in_unified_db.present?
+      Rails.logger.warn "[YSWS#complete] user=#{current_user&.id} review=#{params[:id]} Blocked: already in unified DB (#{@review.in_unified_db})"
+      return render json: { success: false, error: "This review is already in the unified DB" }, status: :unprocessable_entity
+    end
+
     incomplete = @review.devlog_reviews.select { |dr| dr.pending? || dr.justification.blank? }
     if incomplete.any?
       Rails.logger.warn "[YSWS#complete] user=#{current_user&.id} review=#{params[:id]} Blocked: #{incomplete.count} incomplete devlog(s): #{incomplete.map(&:id).inspect}"
