@@ -32,7 +32,7 @@ class ProjectsController < ApplicationController
   end
 
   def prepare_project_show_context
-    @members = @project.users.to_a
+    @members = @project.users.where(banned: false).to_a
     @is_member = current_user && @members.include?(current_user)
     @active_nav_slug = @is_member ? "projects" : "home"
     @can_edit_project = @is_member && policy(@project).update?
@@ -397,7 +397,7 @@ class ProjectsController < ApplicationController
   def followers
     @project = Project.find(params[:id])
     authorize @project, :show?
-    @followers = @project.followers.order(:display_name)
+    @followers = @project.followers.where(banned: false).order(:display_name)
     render "users/followers", layout: false
   end
 

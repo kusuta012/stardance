@@ -69,7 +69,7 @@ module Raffle
     end
 
     def eligible?
-      eligible
+      eligible && !user&.banned?
     end
 
     def hca_linked?

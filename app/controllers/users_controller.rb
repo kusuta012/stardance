@@ -42,12 +42,12 @@ class UsersController < ApplicationController
   end
 
   def followers
-    @followers = @user.followers.order(:display_name)
+    @followers = @user.followers.where(banned: false).order(:display_name)
     render layout: false
   end
 
   def following
-    @following = @user.following.order(:display_name)
+    @following = @user.following.where(banned: false).order(:display_name)
     render layout: false
   end
 
@@ -73,8 +73,8 @@ class UsersController < ApplicationController
     @projects       = profile_projects
     @activity       = profile_activity
     @stats          = profile_stats
-    @follower_count  = @user.followers.count
-    @following_count = @user.following.count
+    @follower_count  = @user.followers.where(banned: false).count
+    @following_count = @user.following.where(banned: false).count
     @viewer_follows  = current_user&.follows?(@user) || false
   end
 
@@ -134,6 +134,7 @@ class UsersController < ApplicationController
 
   # Non-admin, non-self viewers see a placeholder until the user verifies.
   def profile_hidden_from_viewer?
+    return true if @user.banned? && !current_user&.admin?
     return false if @user.identity_verified?
     return false if current_user&.admin?
     return false if current_user&.id == @user.id
