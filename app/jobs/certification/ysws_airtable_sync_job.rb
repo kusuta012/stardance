@@ -94,23 +94,35 @@ module Certification
       devlog_reviews = review.devlog_reviews.to_a
       return nil if devlog_reviews.empty?
 
-      # Collect all devlog justifications
-      justifications = devlog_reviews
-        .map { |dr| dr.justification.presence }
-        .compact
+      return nil if devlog_reviews.none? { |dr| dr.justification.present? }
 
-      return nil if justifications.empty?
+      # Build structured devlog entries with status, description, and justification
+      devlog_entries = devlog_reviews.map.with_index(1) do |dr, i|
+        devlog_body = dr.post_devlog&.body.presence || "(no description)"
+        justification = dr.justification.presence || "(no justification)"
+        minutes_info = "#{dr.original_minutes} min claimed"
+        minutes_info += " → #{dr.approved_minutes} min approved" if dr.approved? && dr.approved_minutes != dr.original_minutes
+        minutes_info = "#{dr.original_minutes} min claimed → REJECTED" if dr.rejected?
 
-      # Use OpenRouter API to summarize (similar to SupportVibecheckJob)
+        <<~ENTRY.strip
+          Devlog #{i} [#{dr.status.upcase}] (#{minutes_info}):
+            Description: #{devlog_body.truncate(500)}
+            Reviewer justification: #{justification}
+        ENTRY
+      end.join("\n\n")
+
+      # Use OpenRouter API to summarize
       prompt = <<~PROMPT
-        Summarize the following YSWS review justifications into one concise justification (2-3 sentences maximum).
-        Focus on the key points and reasoning for approving or rejecting devlogs.
+        You are a reviewer, reviewing the reviews recieved through a program. For each devlog a user submits in a project, a review justification is paired with it.
 
-        JUSTIFICATIONS:
-        #{justifications.map.with_index(1) { |j, i| "#{i}. #{j}" }.join("\n")}
+        Your job is to summarize the following devlog reviews into a short summary 2-3 sentences long.
+        Assume the summary is following the text "who mentioned:" and that the user reading the summary knows how the review process works. Assume that the overall review is a passing one (unless all devlogs have rejected status). But do note if there are any devlog reviews that mention malpractice. If there are, highlight that x devlog reviews mentioned deductions / inflation / high AI usage. Also note if any devlogs were rejected.
+
+        DEVLOG REVIEWS:
+        #{devlog_entries}
 
         OUTPUT:
-        Return only the summary text, no formatting or explanations.
+        Return only the summary text, no formatting or explanations and keep it in first person.
       PROMPT
 
       response = Faraday.post("https://openrouter.ai/api/v1/chat/completions") do |req|
@@ -197,56 +209,63 @@ module Certification
 
       {
         # Identity
-        "review_id" => review.id.to_s,#tik
-        "ship_cert_id" => ship_cert_id_value,#tik
+        "review_id" => review.id.to_s, # tik
+        "ship_cert_id" => ship_cert_id_value, # tik
 
         # User PII
-        "user_slack_id" => user_data[:slack_id],#tik
-        "Email" => user_data[:email],#tik
-        "First Name" => user_data[:first_name],#tik
-        "Last Name" => user_data[:last_name],#tik
-        "user_display_name" => user_data[:display_name],#tik
-        "Birthday" => user_data[:birthday],#tik
-        "How did you hear about this?" => user.ref, #tik
+        "user_slack_id" => user_data[:slack_id], # tik
+        "Email" => user_data[:email], # tik
+        "First Name" => user_data[:first_name], # tik
+        "Last Name" => user_data[:last_name], # tik
+        "user_display_name" => user_data[:display_name], # tik
+        "Birthday" => user_data[:birthday], # tik
+        "How did you hear about this?" => user.ref, # tik
 
         # Address
-        "Address (Line 1)" => primary_address["line_1"],#tik
-        "Address (Line 2)" => primary_address["line_2"],#tik
-        "City" => primary_address["city"],#tik
-        "State / Province" => primary_address["state"],#tik
-        "ZIP / Postal Code" => primary_address["postal_code"],#tik
-        "Country" => primary_address["country"],#tik
+        "Address (Line 1)" => primary_address["line_1"], # tik
+        "Address (Line 2)" => primary_address["line_2"], # tik
+        "City" => primary_address["city"], # tik
+        "State / Province" => primary_address["state"], # tik
+        "ZIP / Postal Code" => primary_address["postal_code"], # tik
+        "Country" => primary_address["country"], # tik
 
         # Project
-        "project_name" => project.title,#tik
-        "ai_declaration" => project.ai_declaration,#tik
-        "project_update_description" => project.update_description,#tik
-        "Code URL" => project.repo_url, #tik
-        "Playable URL" => project.demo_url, #tik
-        "readme_url" => project.readme_url,#tik
-        "Description" => project.description, #tik
+        "project_name" => project.title, # tik
+        "ai_declaration" => project.ai_declaration, # tik
+        "project_update_description" => project.update_description, # tik
+        "Code URL" => project.repo_url, # tik
+        "Playable URL" => project.demo_url, # tik
+        "readme_url" => project.readme_url, # tik
+        "Description" => project.description, # tik
         "Screenshot" => [
           ship_event_screenshot_url.present? ? { "url" => ship_event_screenshot_url } : nil,
           banner_url.present? ? { "url" => banner_url } : nil
-        ].compact, #tik
+        ].compact, # tik
 
         # Review Data
-        "reviewer" => review.reviewer&.display_name || review.reviewer&.email || "Unknown",#tik
-        "ship_certifier" => ship_certifier_name,#tik
-        "reviewed_at" => review.reviewed_at&.iso8601,#tik
-        "ship_certed_at" => ship_cert&.decided_at&.iso8601,#tik
-        "airtable_synced_at" => Time.current.iso8601,#tik
+        "reviewer" => review.reviewer&.display_name || review.reviewer&.email || "Unknown", # tik
+        "ship_certifier" => ship_certifier_name, # tik
+        "reviewed_at" => review.reviewed_at&.iso8601, # tik
+        "ship_certed_at" => ship_cert&.decided_at&.iso8601, # tik
+        "airtable_synced_at" => Time.current.iso8601, # tik
 
         # Hours and Justification
-        "Optional - Override Hours Spent" => hours_spent,#tik
-        "Optional - Override Hours Spent Justification" => justification,#tik
+        "Optional - Override Hours Spent" => hours_spent, # tik
+        "Optional - Override Hours Spent Justification" => justification, # tik
 
         # Rejection
-        "rejection_reason" => final_rejection_reason,#tik
-        "rejected_at" => final_rejected ? Time.current.iso8601 : nil,#tik
+        "rejection_reason" => final_rejection_reason, # tik
+        "rejected_at" => final_rejected ? Time.current.iso8601 : nil, # tik
+
+        # Ship event timestamps
+        "ship_end" => review.post_ship_event&.created_at&.iso8601,
+        "ship_start" => (prior_ship_event(review)&.created_at || project.created_at)&.iso8601,
 
         # Report status
-        "report_status" => report_status(review)
+        "report_status" => report_status(review),
+
+        # Double-dip flag
+        "flagged_double_dipped" => double_dipped?(project.repo_url)
       }
     end
 
@@ -258,7 +277,7 @@ module Certification
         .order(fulfilled_at: :desc)
         .first
 
-      addresses = latest_order&.frozen_address ? [latest_order.frozen_address] : []
+      addresses = latest_order&.frozen_address ? [ latest_order.frozen_address ] : []
 
       {
         slack_id: user.slack_id,
@@ -287,11 +306,12 @@ module Certification
         "devlog #{dr.post_devlog_id}: #{dr.approved_minutes} min"
       end.join("\n")
 
-      ysws_justification = review.summary_justification.presence or raise "YSWS review ##{review.id} is missing a summary justification"
+      ysws_justification = review.summary_justification.presence
       goi_note = ai_summary.present? ? "\n#{ai_summary}" : ""
 
       justification = <<~JUSTIFICATION
-        The user logged #{original_formatted} on hackatime. #{total_original_minutes == total_approved_minutes ? "" : "(This was adjusted to #{approved_formatted} after review.)"}#{goi_note}
+        The user logged #{original_formatted} on hackatime. #{total_original_minutes == total_approved_minutes ? "" : "(This was adjusted to #{approved_formatted} after review.)"}.
+        #{goi_note}
 
         In this time they wrote #{devlog_reviews.count} devlogs.
 
@@ -359,6 +379,62 @@ module Certification
     rescue StandardError => e
       Rails.logger.error("[YswsAirtableSyncJob] screenshot_url error: #{e.message}")
       nil
+    end
+
+    UNIFIED_YSWS_BASE_ID  = "app3A5kJwYqxMLOgh"
+    UNIFIED_YSWS_TABLE_ID = "tblzWWGUYHVH7Zyqf"
+
+    def normalize_code_url(url)
+      return "" if url.blank?
+
+      url
+        .sub(/\Ahttps?:\/\//, "")
+        .sub(/(?:\.git)?\/?(?:#.*)?$/, "")
+    end
+
+    def double_dipped?(repo_url)
+      normalized = normalize_code_url(repo_url)
+      return false if normalized.blank?
+
+      api_key = Rails.application.credentials.dig(:unified_ysws, :airtable_api_key) ||
+                ENV["UNIFIED_READ_ONLY"]
+
+      if api_key.blank?
+        Rails.logger.warn "[YswsAirtableSyncJob] double-dip check skipped: no API key configured (UNIFIED_READ_ONLY)"
+        return false
+      end
+
+      filter  = %Q(FIND("#{normalized}", {Code URL}))
+      encoded = URI.encode_uri_component(filter)
+      url     = "https://api.airtable.com/v0/#{UNIFIED_YSWS_BASE_ID}/#{UNIFIED_YSWS_TABLE_ID}" \
+                "?filterByFormula=#{encoded}&fields[]=Code%20URL"
+
+      response = Faraday.get(url) do |req|
+        req.headers["Authorization"] = "Bearer #{api_key}"
+        req.options.timeout = 10
+      end
+
+      unless response.success?
+        Rails.logger.warn "[YswsAirtableSyncJob] double-dip check failed: HTTP #{response.status} — #{response.body}"
+        return false
+      end
+
+      matches = JSON.parse(response.body).fetch("records", [])
+      Rails.logger.info "[YswsAirtableSyncJob] double-dip check: #{matches.size} match(es) for '#{normalized}'"
+      matches.any?
+    rescue StandardError => e
+      Rails.logger.error "[YswsAirtableSyncJob] double-dip check error: #{e.class}: #{e.message}"
+      false
+    end
+
+    def prior_ship_event(review)
+      ship_event = review.post_ship_event
+      return nil unless ship_event
+
+      review.project.ship_events
+        .where("post_ship_events.created_at < ?", ship_event.created_at)
+        .order("post_ship_events.created_at DESC")
+        .first
     end
 
     def report_status(review)
