@@ -9,7 +9,6 @@
 #  in_unified_db         :boolean          default(FALSE), not null
 #  original_minutes      :integer
 #  repo_checked_at       :datetime
-#  returned_at           :datetime
 #  reviewed_at           :datetime
 #  spotchecked_at        :datetime
 #  summary_justification :text
