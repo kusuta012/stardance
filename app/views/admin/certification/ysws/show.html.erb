@@ -3,7 +3,7 @@
   <%= stylesheet_link_tag "admin", "data-turbo-track": "reload" %>
 <% end %>
 
-<main class="certification-ysws" role="main" data-controller="certification--ysws--review-sidebar certification--ysws--fraud-report certification--ysws--media-viewer certification--ysws--complete-review" data-certification--ysws--fraud-report-review-id-value="<%= @review.id %>" data-certification--ysws--complete-review-review-id-value="<%= @review.id %>">
+<main class="certification-ysws" role="main" data-controller="certification--ysws--review-sidebar certification--ysws--fraud-report certification--ysws--media-viewer certification--ysws--complete-review certification--ysws--return-to-ship-cert" data-certification--ysws--fraud-report-review-id-value="<%= @review.id %>" data-certification--ysws--complete-review-review-id-value="<%= @review.id %>" data-certification--ysws--return-to-ship-cert-review-id-value="<%= @review.id %>">
   <!-- Header Section -->
   <div class="review-detail-header">
     <%= link_to "← back", admin_certification_ysws_reviews_path, class: "btn-back", "aria-label": "Back to review queue" %>
@@ -456,7 +456,8 @@
       </div>
 
       <div class="action-buttons-grid">
-<button class="action-btn btn-return" disabled>
+        <button class="action-btn btn-return"
+                data-action="click->certification--ysws--return-to-ship-cert#open">
           Return to Ship Certs
         </button>
         <button class="action-btn btn-complete"
@@ -467,6 +468,41 @@
       </div>
     </section>
   <% end %>
+
+  <!-- Return to Ship Cert Modal -->
+  <div class="return-ship-cert-modal" data-certification--ysws--return-to-ship-cert-target="modal">
+    <div class="return-ship-cert-modal__content" data-action="click->certification--ysws--return-to-ship-cert#stopPropagation">
+      <div class="return-ship-cert-modal__header">
+        <h2>Return to Ship Certification</h2>
+        <button class="return-ship-cert-modal__close" data-action="click->certification--ysws--return-to-ship-cert#close" aria-label="Close modal">
+          ×
+        </button>
+      </div>
+
+      <div class="return-ship-cert-modal__body">
+        <label for="recert-reason" class="return-ship-cert-modal__label">
+          Why is this project being returned to ship certification?
+        </label>
+        <textarea
+          id="recert-reason"
+          class="return-ship-cert-modal__textarea"
+          data-certification--ysws--return-to-ship-cert-target="textarea"
+          placeholder="Explain why you're returning this project (e.g. missing devlogs, hours don't add up, needs re-review...)"
+          rows="5"></textarea>
+      </div>
+
+      <div class="return-ship-cert-modal__footer">
+        <button class="return-ship-cert-modal__cancel" data-action="click->certification--ysws--return-to-ship-cert#close">
+          Cancel
+        </button>
+        <button class="return-ship-cert-modal__submit"
+                data-action="click->certification--ysws--return-to-ship-cert#submit"
+                data-certification--ysws--return-to-ship-cert-target="submitButton">
+          Return to Ship Certs
+        </button>
+      </div>
+    </div>
+  </div>
 
   <!-- Fraud Report Modal -->
   <div class="fraud-report-modal" data-certification--ysws--fraud-report-target="modal">

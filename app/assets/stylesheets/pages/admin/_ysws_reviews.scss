@@ -2060,6 +2060,165 @@ body:has(.certification-ysws) {
     }
   }
 
+  // Return to Ship Cert Modal
+  .return-ship-cert-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
+    z-index: 2000;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-m);
+
+    &.is-open {
+      display: flex;
+    }
+
+    &__content {
+      background: rgb(5, 4, 24);
+      border: 2px solid var(--color-brand-mint);
+      border-radius: var(--profile-radius);
+      max-width: 600px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      animation: modalSlideIn 0.2s ease-out;
+
+      @media (prefers-reduced-motion: reduce) {
+        animation: none;
+      }
+    }
+
+    &__header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--space-l);
+      border-bottom: 2px solid var(--color-space-border);
+
+      h2 {
+        color: var(--color-brand-mint);
+        font-size: var(--font-size-xl);
+        font-family: var(--font-family-sans);
+        font-weight: 700;
+        margin: 0;
+      }
+    }
+
+    &__close {
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: 2px solid var(--color-space-border);
+      border-radius: 50%;
+      color: var(--color-space-text);
+      font-size: var(--font-size-xxxl);
+      line-height: 1;
+      cursor: pointer;
+      transition: all 0.2s ease;
+
+      &:hover {
+        background: var(--color-space-surface);
+        border-color: var(--color-brand-mint);
+        color: var(--color-brand-mint);
+      }
+    }
+
+    &__body {
+      padding: var(--space-l);
+    }
+
+    &__label {
+      display: block;
+      color: var(--color-space-text);
+      font-size: var(--font-size-m);
+      font-family: var(--font-family-sans);
+      font-weight: 600;
+      margin-bottom: var(--space-s);
+    }
+
+    &__textarea {
+      width: 100%;
+      min-height: 120px;
+      background: rgba(0, 0, 0, 0.3);
+      color: var(--color-space-text);
+      padding: var(--space-m);
+      border: 2px solid var(--color-space-border);
+      border-radius: var(--profile-radius);
+      font-size: var(--font-size-m);
+      font-family: var(--font-family-sans);
+      line-height: 1.5;
+      resize: vertical;
+
+      &:focus {
+        outline: none;
+        border-color: var(--color-brand-mint);
+      }
+
+      &::placeholder {
+        color: var(--color-space-text-muted);
+      }
+    }
+
+    &__footer {
+      display: flex;
+      gap: var(--space-m);
+      justify-content: flex-end;
+      padding: var(--space-l);
+      border-top: 2px solid var(--color-space-border);
+    }
+
+    &__cancel {
+      padding: var(--space-s) var(--space-l);
+      background: var(--color-space-surface);
+      color: var(--color-space-text);
+      border: 2px solid var(--color-space-border);
+      border-radius: var(--profile-radius);
+      font-size: var(--font-size-m);
+      font-weight: 700;
+      font-family: var(--font-family-sans);
+      cursor: pointer;
+      transition: all 0.2s ease;
+
+      &:hover {
+        background: var(--color-space-surface-strong);
+        transform: translateY(-1px);
+      }
+    }
+
+    &__submit {
+      padding: var(--space-s) var(--space-l);
+      background: var(--color-brand-mint);
+      color: var(--color-set-1-bg);
+      border: 2px solid var(--color-brand-mint);
+      border-radius: var(--profile-radius);
+      font-size: var(--font-size-m);
+      font-weight: 700;
+      font-family: var(--font-family-sans);
+      cursor: pointer;
+      transition: all 0.2s ease;
+
+      &:hover {
+        opacity: 0.8;
+        transform: translateY(-1px);
+      }
+
+      &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+      }
+    }
+  }
+
   // Fraud Report Modal
   .fraud-report-modal {
     display: none;
