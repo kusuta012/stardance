@@ -3,7 +3,7 @@ class Admin::Certification::YswsController < Admin::Certification::ApplicationCo
     authorize ::Certification::Ysws
 
     @reviews = ::Certification::Ysws
-      .where(reviewed_at: nil)
+      .where(reviewed_at: nil, returned_at: nil)
       .includes(:project, :user)
       .order(created_at: :asc)
   end
