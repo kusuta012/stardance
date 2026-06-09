@@ -848,6 +848,7 @@ Rails.application.routes.draw do
     resource :og_image, only: [ :show ], module: :missions, defaults: { format: :png }
     member do
       get :guide
+      get :gallery
     end
   end
 

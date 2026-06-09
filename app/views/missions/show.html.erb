@@ -207,18 +207,26 @@
           <h2 id="mission-home-gallery" class="mission-home__section-title">
             Projects for this <em class="mission-home__section-title-accent">mission</em>
           </h2>
-          <ul class="mission-home__gallery-grid">
+          <div class="mission-home__gallery-grid" role="list">
             <% @gallery_projects.each do |project| %>
-              <li class="mission-home__gallery-item">
+              <div class="mission-home__gallery-item" role="listitem">
                 <% if @approved_project_ids.include?(project.id) %>
-                  <span class="mission-home__gallery-badge mission-home__gallery-badge--approved">Approved</span>
+                  <span class="mission-home__gallery-badge mission-home__gallery-badge--approved">Completed</span>
                 <% else %>
                   <span class="mission-home__gallery-badge mission-home__gallery-badge--in-progress">In progress</span>
                 <% end %>
                 <%= render Projects::ShelfCardComponent.new(project: project) %>
-              </li>
+              </div>
             <% end %>
-          </ul>
+            <% if @has_more_gallery %>
+              <%= turbo_frame_tag "gallery-page-2" do %>
+                <div class="mission-home__gallery-show-more-wrapper">
+                  <%= link_to "Show more", gallery_mission_path(@mission.slug, page: 2),
+                        class: "mission-home__gallery-show-more" %>
+                </div>
+              <% end %>
+            <% end %>
+          </div>
         </section>
       <% end %>
     </article>

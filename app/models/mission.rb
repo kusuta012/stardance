@@ -352,7 +352,7 @@ class Mission < ApplicationRecord
     end
   end
 
-  def showcase_projects(limit: 6)
+  def showcase_projects(limit: 6, offset: 0)
     devlog_likes = Post::Devlog
                      .joins(:post)
                      .group("posts.project_id")
@@ -362,15 +362,16 @@ class Mission < ApplicationRecord
       .joins(:mission_attachments)
       .where(project_mission_attachments: { mission_id: id, detached_at: nil }, deleted_at: nil)
       .joins("LEFT JOIN (#{devlog_likes.to_sql}) mission_devlog_likes ON mission_devlog_likes.project_id = projects.id")
-      .left_joins(:project_follows)
-      .group("projects.id", "mission_devlog_likes.devlog_likes_count")
+      .left_joins(:project_follows, :banner_attachment)
+      .group("projects.id", "mission_devlog_likes.devlog_likes_count", "active_storage_attachments.id")
       .order(Arel.sql(<<~SQL))
+        (active_storage_attachments.id IS NULL) ASC,
         (COALESCE(mission_devlog_likes.devlog_likes_count, 0)
           + COUNT(DISTINCT project_follows.id)) DESC,
         projects.id DESC
       SQL
+      .offset(offset)
       .limit(limit)
-      .includes(:users)
       .with_attached_banner
       .to_a
   end

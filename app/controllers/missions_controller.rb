@@ -1,6 +1,6 @@
 class MissionsController < ApplicationController
   before_action :set_body_class
-  before_action :set_mission, only: [ :show, :guide ]
+  before_action :set_mission, only: [ :show, :guide, :gallery ]
   before_action -> { @active_nav_slug = "missions" }
 
   def index
@@ -35,7 +35,9 @@ class MissionsController < ApplicationController
     @ordered_prizes       = @mission.prizes.ordered.includes(:shop_item).to_a
     @guide_outline        = @mission.guide_sections
     @stats                = mission_stats(@mission)
-    @gallery_projects     = @mission.showcase_projects(limit: 12)
+    @gallery_projects     = @mission.showcase_projects(limit: 13)
+    @has_more_gallery     = @gallery_projects.size > 12
+    @gallery_projects     = @gallery_projects.first(12)
     @approved_project_ids = @mission.approved_submission_project_ids.to_set
     @estimated_label      = @mission.estimated_completion_label
     @active_project       = current_user&.active_project_for_mission(@mission)
@@ -56,6 +58,17 @@ class MissionsController < ApplicationController
                                          .order(updated_at: :desc)
                                          .to_a
     end
+  end
+
+  def gallery
+    authorize @mission
+    @page = [ params.fetch(:page, 1).to_i, 1 ].max
+    per_page = 12
+    @gallery_projects     = @mission.showcase_projects(limit: per_page + 1, offset: (@page - 1) * per_page)
+    @approved_project_ids = @mission.approved_submission_project_ids.to_set
+    @next_page = @page + 1 if @gallery_projects.size > per_page
+    @gallery_projects = @gallery_projects.first(per_page)
+    render layout: false
   end
 
   def guide
