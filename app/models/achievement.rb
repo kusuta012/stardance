@@ -23,7 +23,7 @@ Achievement = Data.define(:slug, :name, :description, :icon, :earned_check, :pro
       slug: :referral_2,
       name: "2 Friends Referred",
       description: "Referred 2 people who verified their accounts.",
-      icon: "verified",
+      icon: "referral_2",
       earned_check: ->(user) { user.verified_referral_count >= 2 },
       progress: ->(user) { { current: [ user.verified_referral_count, 2 ].min, target: 2 } }
     ),
@@ -31,7 +31,7 @@ Achievement = Data.define(:slug, :name, :description, :icon, :earned_check, :pro
       slug: :referral_5,
       name: "5 Friends Referred",
       description: "Referred 5 people who verified their accounts.",
-      icon: "verified",
+      icon: "referral_5",
       earned_check: ->(user) { user.verified_referral_count >= 5 },
       progress: ->(user) { { current: [ user.verified_referral_count, 5 ].min, target: 5 } }
     )
