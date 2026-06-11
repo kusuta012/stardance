@@ -183,6 +183,16 @@ class User < ApplicationRecord
     normalized_emails.empty? ? none : where(arel_table[:email].lower.in(normalized_emails))
   }
 
+  # The landing-page signup counter: distinct emails across non-banned users
+  # and RSVPs.
+  def self.deduplicated_signup_count
+    user_emails = where.not(email: [ nil, "" ]).where(banned: false).select("LOWER(email) AS email")
+    rsvp_emails = Rsvp.select("LOWER(email) AS email")
+    connection.select_value(
+      "SELECT COUNT(*) FROM (#{user_emails.to_sql} UNION #{rsvp_emails.to_sql}) AS combined"
+    )
+  end
+
   validates :banner, content_type: [ "image/png", "image/jpeg", "image/webp", "image/gif" ],
                      size: { less_than: 8.megabytes }
   validates :bio, length: { maximum: 1000 }
