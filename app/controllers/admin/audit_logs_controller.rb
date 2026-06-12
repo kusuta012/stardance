@@ -85,7 +85,11 @@ module Admin
       "Vote" => "Vote",
       "Like" => "Like",
       "Rsvp" => "Rsvp",
-      "FulfillmentPayoutRun" => "FulfillmentPayoutRun"
+      "FulfillmentPayoutRun" => "FulfillmentPayoutRun",
+      "ReviewerPayoutRequest" => "ReviewerPayoutRequest",
+      "Raffle::Participant" => "Raffle::Participant",
+      "Raffle::Referral" => "Raffle::Referral",
+      "Raffle::Week" => "Raffle::Week"
     }.freeze
 
     def generate_csv(versions)

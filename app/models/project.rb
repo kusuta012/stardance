@@ -2,38 +2,43 @@
 #
 # Table name: projects
 #
-#  id                 :bigint           not null, primary key
-#  ai_declaration     :text
-#  deleted_at         :datetime
-#  demo_url           :text
-#  description        :text
-#  devlogs_count      :integer          default(0), not null
-#  duration_seconds   :integer          default(0), not null
-#  marked_fire_at     :datetime
-#  memberships_count  :integer          default(0), not null
-#  project_categories :string           default([]), is an Array
-#  project_type       :string
-#  readme_url         :text
-#  repo_url           :text
-#  ship_status        :string           default("draft")
-#  shipped_at         :datetime
-#  synced_at          :datetime
-#  title              :string           not null
-#  tutorial           :boolean          default(FALSE), not null
-#  update_description :text
-#  created_at         :datetime         not null
-#  updated_at         :datetime         not null
-#  fire_letter_id     :string
-#  marked_fire_by_id  :bigint
+#  id                   :bigint           not null, primary key
+#  ai_declaration       :text
+#  deleted_at           :datetime
+#  demo_url             :text
+#  description          :text
+#  devlogs_count        :integer          default(0), not null
+#  duration_seconds     :integer          default(0), not null
+#  hardware_stage       :string
+#  marked_fire_at       :datetime
+#  memberships_count    :integer          default(0), not null
+#  nominated_fire_at    :datetime
+#  project_categories   :string           default([]), is an Array
+#  project_type         :string
+#  readme_url           :text
+#  repo_url             :text
+#  ship_status          :string           default("draft")
+#  shipped_at           :datetime
+#  synced_at            :datetime
+#  title                :string           not null
+#  tutorial             :boolean          default(FALSE), not null
+#  update_description   :text
+#  created_at           :datetime         not null
+#  updated_at           :datetime         not null
+#  fire_letter_id       :string
+#  marked_fire_by_id    :bigint
+#  nominated_fire_by_id :bigint
 #
 # Indexes
 #
-#  index_projects_on_deleted_at         (deleted_at)
-#  index_projects_on_marked_fire_by_id  (marked_fire_by_id)
+#  index_projects_on_deleted_at            (deleted_at)
+#  index_projects_on_marked_fire_by_id     (marked_fire_by_id)
+#  index_projects_on_nominated_fire_by_id  (nominated_fire_by_id)
 #
 # Foreign Keys
 #
 #  fk_rails_...  (marked_fire_by_id => users.id)
+#  fk_rails_...  (nominated_fire_by_id => users.id)
 #
 require "net/http"
 
@@ -59,10 +64,16 @@ class Project < ApplicationRecord
     "Minecraft Mods", "Hardware", "Android App", "iOS App", "Other"
   ].freeze
 
+  # Hardware projects carry a build/design stage; software projects leave
+  # hardware_stage nil. Drives the Lookout screen-recording flow on the project
+  # page (hardware builders can't run a Hackatime editor plugin).
+  HARDWARE_STAGES = %w[design build].freeze
+
   scope :excluding_member, ->(user) {
     user ? where.not(id: user.projects) : all
   }
   scope :fire, -> { where.not(marked_fire_at: nil) }
+  scope :fire_nomination_pending, -> { where.not(nominated_fire_at: nil).where(marked_fire_at: nil) }
   scope :with_ship_events, -> { joins(:ship_events).distinct }
   scope :with_ship_events_between, ->(start_date, end_date) {
     joins(:posts)
@@ -78,10 +89,12 @@ class Project < ApplicationRecord
       .order(ActiveStorage::Attachment.arel_table[:id].eq(nil).asc)
   }
   belongs_to :marked_fire_by, class_name: "User", optional: true
+  belongs_to :nominated_fire_by, class_name: "User", optional: true
 
   has_many :memberships, class_name: "Project::Membership", dependent: :destroy
   has_many :users, through: :memberships
   has_many :hackatime_projects, class_name: "User::HackatimeProject", dependent: :nullify
+  has_many :lookout_sessions, dependent: :destroy
   has_many :posts, dependent: :destroy
   has_many :devlog_posts, -> { where(postable_type: "Post::Devlog").order(created_at: :desc) }, class_name: "Post"
   has_many :devlogs, through: :devlog_posts, source: :postable, source_type: "Post::Devlog"
@@ -91,6 +104,7 @@ class Project < ApplicationRecord
   has_many :votes, dependent: :destroy
   has_many :reports, class_name: "Project::Report", dependent: :destroy
   has_many :ship_reviews, class_name: "Certification::Ship", dependent: :restrict_with_exception
+  has_many :certification_funding_requests, class_name: "Certification::FundingRequest", dependent: :destroy
   has_many :skips, class_name: "Project::Skip", dependent: :destroy
   has_many :project_follows, dependent: :destroy
   has_many :followers, through: :project_follows, source: :user
@@ -108,12 +122,93 @@ class Project < ApplicationRecord
     current_mission_attachment&.mission
   end
 
+  def display_banner
+    if banner.attached?
+      banner
+    elsif current_mission&.banner&.attached?
+      current_mission.banner
+    end
+  end
+
   # True once this project has shipped to the given mission at least once.
   # After that first ship the mission stays attached (for display) but future
   # ships are regular, non-mission ships.
   def shipped_to_mission?(mission)
     return false if mission.nil?
-    mission_submissions.where(mission_id: mission.id).exists?
+    mission_submissions.not_rejected.where(mission_id: mission.id).exists?
+  end
+
+  # The one exception to the shipped-projects-keep-their-mission rule: a
+  # shipped project may still attach a mission that lists one it shipped to
+  # as a direct prerequisite (e.g. webOS 1 -> webOS 2).
+  def eligible_follow_up_mission?(mission)
+    return false if mission.nil? || !mission.has_prerequisites?
+    mission_submissions.not_rejected.where(mission_id: mission.prerequisite_ids).exists?
+  end
+
+  # Makes `mission` the current mission, replacing the active attachment
+  # when the swap is allowed: draft projects switch freely, shipped projects
+  # only move to a follow-up or back to a mission they shipped to. Otherwise
+  # the attachment validations raise RecordInvalid.
+  def attach_mission!(mission)
+    with_lock do
+      current = current_mission_attachment
+      current.detach! if current && may_swap_mission_to?(mission)
+      mission_attachments.create!(mission: mission, attached_at: Time.current)
+    end
+  end
+
+  # Detaches the current mission and returns the fallback it re-attached,
+  # if any — a shipped project never goes mission-less.
+  def detach_mission!
+    with_lock do
+      attachment = current_mission_attachment
+      next nil unless attachment
+
+      attachment.detach!
+      fallback = fallback_mission_after_detaching(attachment.mission)
+      mission_attachments.create!(mission: fallback, attached_at: Time.current) if fallback
+      fallback
+    end
+  end
+
+  # The mission a detach falls back to: the most recent one this project
+  # shipped to, other than the mission being detached.
+  def fallback_mission_after_detaching(mission)
+    scope = mission_submissions.not_rejected
+    scope = scope.where.not(mission_id: mission.id) if mission
+    scope.order(created_at: :desc).first&.mission
+  end
+
+  # Whether `mission` may replace the current attachment: draft projects
+  # switch freely; shipped projects only move to a follow-up or back to a
+  # mission they shipped to. The attachment validation enforces this too.
+  def may_swap_mission_to?(mission)
+    !shipped? || shipped_to_mission?(mission) || eligible_follow_up_mission?(mission)
+  end
+
+  # Follow-up missions for the switch UI, in one pass: :ready to attach now
+  # (all prerequisites approved for the user), :awaiting this project's
+  # in-review ships clearing (shown as disabled teasers).
+  def follow_up_targets_for(user)
+    targets = { ready: [], awaiting: [] }
+    mission = current_mission
+    return targets if user.nil? || mission.nil? || !shipped_to_mission?(mission)
+
+    missions = mission.unlocks.available.includes(:prerequisites).to_a
+    return targets if missions.empty?
+
+    completed_ids = user.completed_mission_ids
+    in_review_ids = mission_submissions.in_review.pluck(:mission_id)
+    missions.each do |mission|
+      missing = mission.prerequisite_ids - completed_ids
+      if missing.empty?
+        targets[:ready] << mission
+      elsif (missing - in_review_ids).empty?
+        targets[:awaiting] << mission
+      end
+    end
+    targets
   end
 
   # needs to be implemented
@@ -155,7 +250,19 @@ class Project < ApplicationRecord
             content_type: { in: ACCEPTED_CONTENT_TYPES, spoofing_protection: true },
             size: { less_than: MAX_BANNER_SIZE, message: "is too large (max 10 MB)" },
             processable_file: true
+  # A blank hardware_stage means "software project". The edit form's type
+  # toggle submits an empty string when Software is selected; coerce it to nil
+  # so the column actually clears and passes the inclusion validation (which
+  # allows nil, but not "").
+  normalizes :hardware_stage, with: ->(value) { value.presence }
+  validates :hardware_stage, inclusion: { in: HARDWARE_STAGES }, allow_nil: true
   validate :validate_project_categories
+  validate :hardware_stage_locked_after_funding_request
+
+  def hardware_stage_locked_after_funding_request
+    return unless hardware_stage_changed? && has_any_funding_request?
+    errors.add(:hardware_stage, "cannot be changed after a funding request has been submitted")
+  end
 
   def validate_project_categories
     return if project_categories.blank?
@@ -205,6 +312,48 @@ class Project < ApplicationRecord
     shipped_at.present? || !draft?
   end
 
+  def self.hardware_flow_enabled?
+    Flipper.enabled?(:hardware_flow)
+  end
+
+  # Hardware projects are the ones with a stage set; software projects leave it
+  # nil. Gates the Lookout recorder UI on the project page.
+  def hardware?
+    self.class.hardware_flow_enabled? && hardware_stage.present?
+  end
+
+  def design_stage?
+    self.class.hardware_flow_enabled? && hardware_stage == "design"
+  end
+
+  def build_stage?
+    self.class.hardware_flow_enabled? && hardware_stage == "build"
+  end
+
+  # True while a funding request for this project is awaiting reviewer decision.
+  def has_pending_funding_request?
+    certification_funding_requests.pending.exists?
+  end
+
+  # True once any funding request has been submitted (pending, approved, or returned).
+  def has_any_funding_request?
+    return @_has_any_funding_request if defined?(@_has_any_funding_request)
+    @_has_any_funding_request = certification_funding_requests.exists?
+  end
+
+  # The latest funding request (for displaying approved amount, status, etc.).
+  def latest_funding_request
+    return @_latest_funding_request if defined?(@_latest_funding_request)
+    @_latest_funding_request = certification_funding_requests.order(created_at: :desc).first
+  end
+
+  # Name of the Hackatime project that Lookout timelapse heartbeats are filed
+  # under (and auto-linked to this project) — the project title, so recorded
+  # time lands under the same Hackatime project as any code-based time.
+  def hackatime_recorder_name
+    title
+  end
+
   def display_description
     description.to_s
   end
@@ -219,18 +368,19 @@ class Project < ApplicationRecord
     hackatime_uid = memberships.owner.first&.user&.hackatime_identity&.uid
     return 0 unless hackatime_uid
 
-    total_seconds = HackatimeService.fetch_total_seconds_for_projects(hackatime_uid, hackatime_keys)
+    total_seconds = HackatimeService.fetch_total_seconds_for_projects(hackatime_uid, hackatime_keys, access_token: memberships.owner.first&.user&.hackatime_identity&.access_token)
     return 0 unless total_seconds
 
     (total_seconds / 3600.0).round(1)
   end
 
-  def seconds_coded_in_devlog_window(hackatime_uid, at: Time.current)
+  def seconds_coded_in_devlog_window(hackatime_uid, at: Time.current, access_token: nil)
     HackatimeService.fetch_total_seconds_for_projects(
       hackatime_uid,
       hackatime_keys,
       start_date: devlog_window_start(at).iso8601,
-      end_date: at.iso8601
+      end_date: at.iso8601,
+      access_token: access_token
     )
   end
 
@@ -264,18 +414,22 @@ class Project < ApplicationRecord
     event :return_for_changes do
       transitions from: :under_review, to: :needs_changes
     end
+
+    event :resubmit_for_review do
+      transitions from: :needs_changes, to: :submitted
+    end
   end
 
   # Maps each editable info field on the project form to the shipping
-  # requirement keys it satisfies. Mirrors FIELD_REQUIREMENT_MAP in the
-  # project-form Stimulus controller. The union of these keys is what
+  # requirement keys it satisfies. The union of these keys is what
   # distinguishes "project info" from gates like devlog / payout / vote balance.
   FIELD_REQUIREMENT_MAP = {
     description: %i[description],
     demo_url: %i[demo_url demo_url_reachable],
     repo_url: %i[repo_url repo_url_format repo_cloneable],
     readme_url: %i[readme_url readme_url_reachable],
-    banner: %i[banner]
+    banner: %i[banner],
+    ai_declaration: %i[ai_declaration]
   }.freeze
 
   INFO_REQUIREMENT_KEYS = FIELD_REQUIREMENT_MAP.values.flatten.freeze
@@ -333,6 +487,12 @@ class Project < ApplicationRecord
         passed: description.present?
       },
       {
+        key: :ai_declaration,
+        label: "Declare your AI usage (write \"None\" if you didn't use any)",
+        tooltip: "Describe how you used AI in this project. AI use is OK, but it should feel like your own work — if you didn't use any, write \"None\".",
+        passed: ai_declaration.present?
+      },
+      {
         key: :banner,
         label: "Upload a screenshot of your project",
         tooltip: "A screenshot (JPEG, PNG, or WebP, max 10MB) that represents your project on the explore page.",
@@ -343,6 +503,13 @@ class Project < ApplicationRecord
         label: "Post at least one devlog since your last ship",
         tooltip: "You must have posted at least one devlog after your previous ship to show progress on this version.",
         passed: has_devlog_since_last_ship?
+      },
+      {
+        key: :build_devlog,
+        label: "Post at least one build devlog before shipping",
+        fail_label: "Post at least one build devlog before you can ship!",
+        tooltip: "Now that your project is funded it's in the build stage. Log some build time and post a build devlog to show progress before you ship. Design-stage devlogs don't count.",
+        passed: !received_grant? || has_build_devlog_since_last_ship?
       },
       {
         key: :payout,
@@ -393,16 +560,10 @@ class Project < ApplicationRecord
         tooltip: "Your devlogs must have actual tracked time attached. Make sure you're logging time via Hackatime.",
         passed: duration_seconds > 10
       }
-      # { key: :ai_declaration, label: "Declare your AI usage for this project (write 'None' if you didn't use any)", passed: ai_declaration.present? }
     ]
       .map.with_index
       .sort_by { |pair| [ pair[0][:passed] ? 1 : 0, pair[1] ] }
       .map { |it| it[0] }
-  end
-
-  def visual_shipping_requirements
-    # only those that have a label we could use right now
-    shipping_requirements.select { |elem| !elem[:passed] || elem[:label] }
   end
 
   def shippable? = ship_blocking_errors.empty?
@@ -471,6 +632,10 @@ class Project < ApplicationRecord
     marked_fire_at.present?
   end
 
+  def fire_nomination_pending?
+    nominated_fire_at.present? && marked_fire_at.nil?
+  end
+
   def readme_is_raw_github_url?
     return false if readme_url.blank?
 
@@ -491,6 +656,21 @@ class Project < ApplicationRecord
     scope.exists?
   end
 
+  # True once this project has had a funding request approved (the "I need
+  # Funding" path). Such projects must show real build progress before shipping.
+  def received_grant?
+    certification_funding_requests.approved.exists?
+  end
+
+  # Funded projects must post at least one BUILD-phase devlog since their last
+  # ship before they can ship — design-phase devlogs (logged before the grant)
+  # don't count.
+  def has_build_devlog_since_last_ship?
+    scope = devlogs.build_phase.where(deleted_at: nil)
+    scope = scope.where("post_devlogs.created_at > ?", last_ship_event.created_at) if last_ship_event
+    scope.exists?
+  end
+
   # The recommended next action for this project is to post a devlog when the
   # user either hasn't posted anything yet or their most recent post was a
   # ship (i.e. progress is needed before the next ship).
@@ -502,20 +682,48 @@ class Project < ApplicationRecord
     last_ship_at.present? && last_ship_at > last_devlog_at
   end
 
-  # Public so ProjectUrlProbeService can probe demo/repo URLs on re-ship. The
-  # HTTP helpers it leans on stay private below.
-  def url_reachable?(url)
-    cache_key = "url_reachable_#{Digest::MD5.hexdigest(url)}"
-    Rails.cache.fetch(cache_key, expires_in: 5.minutes) do
-      next false unless SafeUrl.safe_to_probe?(url)
-      probe_url(URI.parse(url))
+  PROBE_SKIP_DOMAINS = %w[
+    npmjs.com
+    crates.io
+    curseforge.com
+    makerworld.com
+    streamlit.app
+  ].freeze
+
+  # Public so ProjectUrlProbeService and the controller can probe URLs.
+  # Returns the HTTP status code (int), nil for allowlisted domains.
+  def url_probe_status(url, cache: true)
+    uri = URI.parse(url)
+    return nil if PROBE_SKIP_DOMAINS.any? { |d| uri.host&.end_with?(d) }
+
+    if cache
+      Rails.cache.fetch("url_probe_v2_#{Digest::MD5.hexdigest(url)}", expires_in: 5.minutes) do
+        do_url_probe(url)
+      end
+    else
+      do_url_probe(url)
     end
-  rescue URI::InvalidURIError, SocketError, Errno::ECONNREFUSED, Errno::EHOSTUNREACH,
-         Net::OpenTimeout, Net::ReadTimeout, OpenSSL::SSL::SSLError
+  end
+
+  def url_reachable?(url)
+    status = url_probe_status(url)
+    status.nil? || (200..299).cover?(status)
+  rescue SafeUrl::Error, URI::InvalidURIError, SocketError, Errno::ECONNREFUSED,
+         Errno::EHOSTUNREACH, Net::OpenTimeout, Net::ReadTimeout, OpenSSL::SSL::SSLError
     false
   end
 
   private
+
+  def do_url_probe(url)
+    response = SafeUrl.safe_get(
+      url,
+      headers: { "User-Agent" => "Stardance project validator (https://stardance.hackclub.com/)" },
+      open_timeout: 5,
+      read_timeout: 5
+    )
+    response.code.to_i
+  end
 
   def devlog_window_start(at)
     previous_devlog = devlogs.where("post_devlogs.created_at < ?", at).order("post_devlogs.created_at desc").first
@@ -524,31 +732,14 @@ class Project < ApplicationRecord
 
   def previous_ship_event_has_payout?
     return true if last_ship_event.nil?
-    last_ship_event.payout.present?
+    return true if last_ship_event.payout.present?
+    sub = last_ship_event.mission_submission
+    return true if sub&.payout_path == "static_prize"
+    return true if sub&.rejected?
+    false
   end
 
   def notify_slack_channel
     PostCreationToSlackJob.perform_later(self)
-  end
-
-  def probe_url(uri, limit = 3)
-    return false if limit <= 0
-
-    http = Net::HTTP.new(uri.host, uri.port)
-    http.use_ssl = (uri.scheme == "https")
-    http.open_timeout = 10
-    http.read_timeout = 10
-    response = http.request_head(uri.request_uri)
-
-    if response.is_a?(Net::HTTPRedirection) && response["location"]
-      next_uri = URI.parse(response["location"])
-      return false unless SafeUrl.safe_to_probe?(next_uri.to_s)
-      probe_url(next_uri, limit - 1)
-    elsif response.is_a?(Net::HTTPSuccess)
-      true
-    else
-      # Some servers don't support HEAD — fall back to GET
-      http.request_get(uri.request_uri).is_a?(Net::HTTPSuccess)
-    end
   end
 end

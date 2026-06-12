@@ -12,7 +12,7 @@ class Projects::DevlogsController < ApplicationController
     authorize @devlog
     @body_class = "app-layout-page"
     @post = @project.posts.visible_to(current_user).find_by!(postable: @devlog)
-    @comments = @devlog.comments.not_deleted.includes(:user).order(created_at: :asc)
+    @comments = @devlog.comments.not_deleted.joins(:user).where(users: { banned: false }).includes(:user).order(created_at: :asc)
   end
 
   def create
@@ -23,11 +23,16 @@ class Projects::DevlogsController < ApplicationController
       return redirect_to project_path(@project), alert: "Could not calculate your coding time. Please try again." unless @preview_time.present?
 
       @devlog = Post::Devlog.new(devlog_params)
+      @devlog.uploading_attachments = devlog_params[:attachments].present?
       @devlog.duration_seconds = @preview_seconds
+      # Remember which hardware stage this time was logged in (nil for software)
+      # so the ship payout basis can count build-phase time only.
+      @devlog.phase = @project.hardware_stage
       @devlog.hackatime_projects_key_snapshot = test_time_granted? ? "test" : @project.hackatime_keys.join(",")
 
       if @devlog.save
         Post.create!(project: @project, user: current_user, postable: @devlog)
+        attach_lookout_sessions(@devlog)
         session.delete(test_time_session_key) if test_time_granted?
         track_event "devlog_posted", { project_id: @project.id, devlog_id: @devlog.id, duration_seconds: @devlog.duration_seconds }
         flash[:notice] = "Devlog created successfully"
@@ -44,8 +49,13 @@ class Projects::DevlogsController < ApplicationController
     authorize @project, :create_devlog?
     load_preview_time
     respond_to do |format|
-      format.html { render partial: "projects/devlogs/preview_time", locals: { preview_time: @preview_time, preview_seconds: @preview_seconds } }
+      format.html { render partial: "projects/devlogs/preview_time", locals: { preview_time: @preview_time, preview_seconds: @preview_seconds, hardware: @project.hardware? } }
       format.json { render json: { preview_time: @preview_time } }
+    end
+  rescue Pundit::NotAuthorizedError
+    respond_to do |format|
+      format.html { render partial: "projects/devlogs/preview_time", locals: { preview_time: nil, preview_seconds: 0, hardware: @project.hardware? }, status: :forbidden }
+      format.json { render json: { error: "Not authorized" }, status: :forbidden }
     end
   end
 
@@ -170,6 +180,14 @@ class Projects::DevlogsController < ApplicationController
     params.require(:post_devlog).permit(:body, attachments: [])
   end
 
+  def attach_lookout_sessions(devlog)
+    ids = Array(params.dig(:post_devlog, :lookout_session_ids)).reject(&:blank?)
+    return if ids.empty?
+
+    @project.lookout_sessions.where(user: current_user, id: ids, devlog_id: nil)
+      .update_all(devlog_id: devlog.id)
+  end
+
   def update_devlog_params
     params.require(:post_devlog).permit(:body, attachments: [])
   end
@@ -182,7 +200,7 @@ class Projects::DevlogsController < ApplicationController
     return apply_test_time_preview if test_time_granted? && hackatime_keys.blank?
     return @preview_time = nil unless hackatime_keys.present?
 
-    seconds = @project.seconds_coded_in_devlog_window(current_user.hackatime_identity&.uid)
+    seconds = @project.seconds_coded_in_devlog_window(current_user.hackatime_identity&.uid, access_token: current_user.hackatime_identity&.access_token)
     return apply_test_time_preview if test_time_granted? && seconds.nil?
     return @preview_time = nil if seconds.nil?
 

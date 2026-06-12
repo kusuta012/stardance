@@ -88,6 +88,7 @@ class Home::FeedsController < ApplicationController
       .joins("LEFT JOIN users feed_authors ON feed_authors.id = posts.user_id")
       .joins("LEFT JOIN projects feed_projects ON feed_projects.id = posts.project_id")
       .where("feed_projects.id IS NULL OR feed_projects.description IS NOT NULL")
+      .where("feed_authors.banned = FALSE")
       .order(Arel.sql(quality_latest_order_sql))
   end
 
@@ -116,7 +117,7 @@ class Home::FeedsController < ApplicationController
     end
 
     if (ships = grouped["Post::ShipEvent"])
-      preload(ships, postable: { mission_submission: :mission })
+      preload(ships, postable: [ :attachments_attachments, { mission_submission: :mission } ])
     end
 
     if (reposts = grouped["Post::Repost"])

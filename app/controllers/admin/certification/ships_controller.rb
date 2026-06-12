@@ -1,6 +1,7 @@
 class Admin::Certification::ShipsController < Admin::Certification::ApplicationController
-  before_action :release_other_claims, only: [ :next, :claim ]
-  before_action :set_ship, only: [ :show, :update, :claim ]
+  before_action :release_other_claims, only: [ :next ]
+  before_action :set_ship, only: [ :show, :update ]
+  before_action :set_submitter_context, only: [ :show, :update ]
   before_action :set_body_class, only: [ :index, :show, :update ]
 
   def index
@@ -13,7 +14,7 @@ class Admin::Certification::ShipsController < Admin::Certification::ApplicationC
     @to = parse_date(params[:to])
 
     scope = policy_scope(::Certification::Ship)
-              .includes(:reviewer, project: { memberships: :user })
+              .includes(:reviewer, :returned_by, project: { memberships: :user })
     scope = scope.where(status: @status) unless @status == "all"
     scope = scope.where("certification_ship_reviews.created_at >= ?", @from.beginning_of_day) if @from
     scope = scope.where("certification_ship_reviews.created_at <= ?", @to.end_of_day) if @to
@@ -65,17 +66,14 @@ class Admin::Certification::ShipsController < Admin::Certification::ApplicationC
     end
   end
 
-  def claim
-    authorize @ship, :claim?
-    claimed = ::Certification::Ship.atomic_claim!(@ship.id, current_user)
-    if claimed
-      redirect_to admin_certification_ship_path(claimed)
-    else
-      redirect_to admin_certification_ships_path, alert: "Couldn't claim that review — someone else got it."
-    end
-  end
-
   private
+
+  # Also loaded for update so the re-rendered show page keeps the submitter
+  # panel when the verdict form fails validation.
+  def set_submitter_context
+    @owner = @ship.owner
+    @submitter_history = @owner && ::Certification::Ship.submitter_history(@owner)
+  end
 
   def set_ship
     @ship = ::Certification::Ship.find(params[:id])

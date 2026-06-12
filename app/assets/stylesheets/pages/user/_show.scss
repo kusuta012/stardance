@@ -760,8 +760,8 @@ turbo-frame#profile_tabs {
   list-style: none;
   margin: 0;
   padding: 0;
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
   gap: var(--space-l);
 }
 
@@ -774,8 +774,9 @@ turbo-frame#profile_tabs {
 // radius shared by every container.
 .profile-project-card {
   display: flex;
+  flex-direction: column;
+  height: 100%;
   gap: var(--space-m);
-  padding-right: var(--space-m);
   background: var(--color-set-2-bg);
   // Use box-shadow as a fake border so the banner image can extend over it
   // without being clipped by border-radius.
@@ -792,7 +793,7 @@ turbo-frame#profile_tabs {
 }
 
 .profile-project-card__banner {
-  width: 180px;
+  width: 100%;
   flex-shrink: 0;
   align-self: stretch;
   background: var(--color-overlay-light-soft);
@@ -800,23 +801,24 @@ turbo-frame#profile_tabs {
   // Inherit the parent card's left-side rounding so the image's corners
   // visually overlap the card's box-shadow border.
   border-top-left-radius: var(--profile-radius);
-  border-bottom-left-radius: var(--profile-radius);
+  border-top-right-radius: var(--profile-radius);
 }
 
 .profile-project-card__banner-img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: bottom;
   display: block;
+  aspect-ratio: 3;
 }
 
 .profile-project-card__body {
   flex: 1;
   min-width: 0;
-  padding: var(--space-m) 0;
+  padding: 0 var(--space-m) var(--space-m) var(--space-m);
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
   gap: var(--space-m);
 }
 
@@ -834,6 +836,33 @@ turbo-frame#profile_tabs {
   font-weight: 700;
   line-height: 1;
   color: var(--color-space-text);
+}
+
+.profile-project-card__title-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-s);
+  min-width: 0;
+}
+
+.profile-project-card__tag {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+
+  // Orange "Hardware" pill — matches the project page tag.
+  &--hardware {
+    background: var(--color-brand-orange-soft);
+    color: var(--color-brand-orange);
+  }
 }
 
 .profile-project-card__meta {
@@ -876,6 +905,12 @@ turbo-frame#profile_tabs {
   margin: 0;
   font-size: var(--font-size-l);
   line-height: 1.3;
+
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-clamp: 4;
+  -webkit-line-clamp: 4;
 }
 
 .profile-project-card__updated {
@@ -928,6 +963,7 @@ turbo-frame#profile_tabs {
   box-shadow: none;
   border: 2px dashed var(--color-space-border);
   justify-content: center;
+  align-items: center;
   padding: var(--space-m);
   font-size: var(--font-size-m);
   opacity: 0.7;
@@ -988,6 +1024,10 @@ turbo-frame#profile_tabs {
 
   .profile-project-card__body {
     padding: 0 var(--space-m) var(--space-m);
+  }
+
+  .project-list {
+    grid-template-columns: 1fr;
   }
 }
 

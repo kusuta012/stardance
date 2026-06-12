@@ -1,4 +1,4 @@
-<% if current_user&.hca_linked? && session[:just_joined_slack] && !current_user.has_dismissed?("slack_doodle") %>
+<% if current_user&.hca_linked? && !current_user.has_dismissed?("slack_doodle") %>
   <div class="slack-doodle" data-controller="slack-doodle">
     <div class="slack-doodle__art">
       <%= image_tag "slack-doodle.png", alt: "Orpheus holding the Slack logo", class: "slack-doodle__image" %>

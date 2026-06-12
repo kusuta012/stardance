@@ -1,4 +1,9 @@
 class UsersController < ApplicationController
+  include TimelinePostPreloading
+
+  discover_rail_widgets :achievements, :upcoming_events,
+                        context: -> { { profile_user: @user } }
+
   before_action :set_user
   before_action :authorize_user, only: %i[update followers following]
 
@@ -40,12 +45,12 @@ class UsersController < ApplicationController
   end
 
   def followers
-    @followers = @user.followers.order(:display_name)
+    @followers = @user.followers.where(banned: false).order(:display_name)
     render layout: false
   end
 
   def following
-    @following = @user.following.order(:display_name)
+    @following = @user.following.where(banned: false).order(:display_name)
     render layout: false
   end
 
@@ -71,16 +76,17 @@ class UsersController < ApplicationController
     @projects       = profile_projects
     @activity       = profile_activity
     @stats          = profile_stats
-    @follower_count  = @user.followers.count
-    @following_count = @user.following.count
+    @follower_count  = @user.followers.where(banned: false).count
+    @following_count = @user.following.where(banned: false).count
     @viewer_follows  = current_user&.follows?(@user) || false
   end
 
   def profile_projects
     @user.projects
          .select(:id, :title, :description, :created_at, :updated_at,
-                 :ship_status, :shipped_at, :devlogs_count, :duration_seconds)
-         .includes(:users, banner_attachment: :blob)
+                 :ship_status, :shipped_at, :devlogs_count, :duration_seconds,
+                 :hardware_stage)
+         .includes(:users, banner_attachment: :blob, mission_attachments: { mission: { banner_attachment: :blob } })
          .order(created_at: :desc)
   end
 
@@ -89,7 +95,7 @@ class UsersController < ApplicationController
                 .where("projects.deleted_at IS NULL OR posts.postable_type = ?", "Post::Repost")
                 .visible_to(current_user)
                 .where(user_id: @user.id)
-                .preload(:project, :user, :postable)
+                .preload(:postable)
                 .order(created_at: :desc)
 
     scope = hide_deleted_devlogs(scope) unless policy(@user).view_deleted_devlogs?
@@ -97,6 +103,7 @@ class UsersController < ApplicationController
     scope = hide_rejected_ships(scope)
 
     @pagy, posts = pagy(:offset, scope, limit: ACTIVITY_LIMIT)
+    preload_timeline_postables(posts)
     posts.select { |post| !post.repost? || post.visible_repost_original_for?(current_user) }
   end
 
@@ -131,6 +138,7 @@ class UsersController < ApplicationController
 
   # Non-admin, non-self viewers see a placeholder until the user verifies.
   def profile_hidden_from_viewer?
+    return true if @user.banned? && !current_user&.admin?
     return false if @user.identity_verified?
     return false if current_user&.admin?
     return false if current_user&.id == @user.id

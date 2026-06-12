@@ -42,6 +42,7 @@ class Mission::Submission < ApplicationRecord
   self.table_name = "mission_submissions"
 
   include SoftDeletable
+  include Ledgerable
   include AASM
 
   has_paper_trail
@@ -86,6 +87,12 @@ class Mission::Submission < ApplicationRecord
       transitions from: [ :approved, :rejected ], to: :pending
     end
   end
+
+  # "Shipped" in the loose sense: any submission still in flight or approved.
+  # Contrast with `approved` for sites that need full completion.
+  scope :not_rejected, -> { where.not(status: "rejected") }
+  # Still working its way through certification/review.
+  scope :in_review, -> { where.not(status: %w[approved rejected]) }
 
   scope :reviewable,  -> { pending }
   scope :unredeemed,  -> { approved.where(shop_order_id: nil) }

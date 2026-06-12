@@ -2,6 +2,7 @@ class Projects::SetupController < ApplicationController
   layout "onboarding"
 
   before_action :require_signed_in!
+  before_action :redirect_if_setup_complete, except: %i[welcome]
   before_action :load_setup_project_for_prefill, only: %i[name missions]
   before_action :load_setup_project, only: %i[link_account welcome]
 
@@ -58,7 +59,6 @@ class Projects::SetupController < ApplicationController
 
     project = find_or_create_setup_project!
     project.update!(title: title, description: description.presence)
-    track_event "project_created", { project_id: project.id, source: "setup" }
     redirect_to next_gate_after_details_path
   end
 
@@ -82,19 +82,18 @@ class Projects::SetupController < ApplicationController
       redirect_to projects_setup_missions_path, alert: "That mission isn't available." and return
     end
 
-    existing = project.mission_attachments.find_by(mission_id: mission.id)
+    unless mission.prerequisites_met_by?(current_user)
+      unmet = mission.unmet_prerequisites_for(current_user).map(&:name).to_sentence
+      redirect_to mission_path(mission.slug), alert: "Complete #{unmet} first to unlock this mission." and return
+    end
 
-    if existing&.detached_at.nil? && existing.present?
+    if project.current_mission&.id == mission.id
       redirect_to(next_gate_after_details_path) and return
     end
 
-    is_first_attach = existing.nil?
+    is_first_attach = !project.mission_attachments.exists?(mission_id: mission.id)
 
-    if existing
-      existing.update!(detached_at: nil, attached_at: Time.current)
-    else
-      project.mission_attachments.create!(mission: mission, attached_at: Time.current)
-    end
+    project.attach_mission!(mission)
 
     # Authored defaults apply only on first attach — never overwrite a
     # builder's edits on re-attach.
@@ -136,6 +135,14 @@ class Projects::SetupController < ApplicationController
     redirect_to root_path, alert: "Please sign in to start a project."
   end
 
+  def redirect_if_setup_complete
+    return unless current_user&.hca_linked?
+    return unless current_user.projects.exists?
+
+    project = find_setup_project
+    redirect_to project ? project_path(project) : root_path
+  end
+
   def load_setup_project
     @setup_project = find_setup_project
     return if @setup_project
@@ -175,6 +182,7 @@ class Projects::SetupController < ApplicationController
       project.memberships.create!(user: current_user, role: :owner)
     end
     session[:setup_project_id] = project.id
+    track_event "project_created", { project_id: project.id, source: "setup" }
     project
   end
 
@@ -185,26 +193,22 @@ class Projects::SetupController < ApplicationController
   def suggested_missions
     scope = Mission.available
                    .where.not(id: missions_user_already_has_a_project_on)
-                   .includes(:icon_attachment)
+                   .includes(:icon_attachment, :prerequisites)
 
     difficulties = EXPERIENCE_TO_DIFFICULTIES[current_user.experience_level.to_s]
-    if difficulties.present?
+    candidates = if difficulties.present?
       matched = scope.where(difficulty: difficulties)
                      .order(featured_at: :desc)
-                     .limit(6)
                      .to_a
-      remaining_slots = 6 - matched.size
-      if remaining_slots.positive?
-        rest = scope.where.not(id: matched.map(&:id))
-                    .order(featured_at: :desc)
-                    .limit(remaining_slots)
-        matched + rest.to_a
-      else
-        matched
-      end
+      rest = scope.where.not(id: matched.map(&:id))
+                  .order(featured_at: :desc)
+                  .to_a
+      matched + rest
     else
-      scope.order(featured_at: :desc).limit(6).to_a
+      scope.order(featured_at: :desc).to_a
     end
+
+    candidates.select { |m| m.prerequisites_met_by?(current_user) }.first(6)
   end
 
   def missions_user_already_has_a_project_on

@@ -119,8 +119,12 @@ module Posts
       show_comments || show_reposts || show_likes || show_actions
     end
 
-    def comment_url
-      card_link_url || "#"
+    def show_views?
+      helpers.show_post_views?
+    end
+
+    def views_count
+      display_post&.views_count.to_i
     end
 
     def comments_count_id

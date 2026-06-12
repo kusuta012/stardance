@@ -1,7 +1,9 @@
 class ProjectsController < ApplicationController
+  include TimelinePostPreloading
+
   # Mission + payout-votes render as discover-rail modules on the project page.
   # The expanded mission module also previews the next guide step.
-  discover_rail_widgets :project_mission_expanded, :ship_intro, :payout_votes,
+  discover_rail_widgets :project_mission_expanded, :mission_browse, :ship_intro, :payout_votes, :upcoming_events,
                         context: -> { { project: @project, votes_for_payout: @votes_for_payout } }
 
   before_action :set_project_minimal, only: [ :edit, :update, :destroy ]
@@ -30,7 +32,7 @@ class ProjectsController < ApplicationController
   end
 
   def prepare_project_show_context
-    @members = @project.users.to_a
+    @members = @project.users.where(banned: false).to_a
     @is_member = current_user && @members.include?(current_user)
     @active_nav_slug = @is_member ? "projects" : "home"
     @can_edit_project = @is_member && policy(@project).update?
@@ -75,13 +77,15 @@ class ProjectsController < ApplicationController
     load_posts = ->(include_deleted_devlogs: false) {
       scope = @project.posts
                        .visible_to(current_user)
-                       .includes(postable: [ :attachments_attachments ])
+                       .preload(:postable)
                        .order(created_at: :desc)
       unless include_deleted_devlogs
         scope = scope.joins("LEFT JOIN post_devlogs ON posts.postable_type = 'Post::Devlog' AND posts.postable_id = post_devlogs.id")
                      .where("posts.postable_type != 'Post::Devlog' OR post_devlogs.deleted_at IS NULL")
       end
-      scope.select { |post| post.postable.present? }
+      posts = scope.select { |post| post.postable.present? }
+      preload_timeline_postables(posts, project_context: true)
+      posts
     }
 
     @posts = if policy(@project).view_deleted_devlogs?
@@ -96,8 +100,32 @@ class ProjectsController < ApplicationController
 
     @posts = @posts.reject { |post| post.postable_type == "Post::ShipEvent" && post.postable.certification_status == "rejected" }
 
-    @show_project_onboarding = @is_member && @posts.empty?
+    # Shipwright verdicts are rendered straight from the review records —
+    # they're private to project members, so they never become Post rows.
+    @timeline_entries = (@posts + visible_ship_decisions).sort_by do |entry|
+      entry.is_a?(Certification::Ship) ? entry.decided_on : entry.created_at
+    end.reverse
+
+    @show_project_onboarding = @is_member && @timeline_entries.empty?
     @project_onboarding_mission = @project.current_mission
+
+    @available_missions = if @is_member && @project.current_mission.nil? && !@project.shipped?
+      taken_mission_ids = current_user.projects
+                                      .where(deleted_at: nil)
+                                      .joins(:mission_attachments)
+                                      .where(project_mission_attachments: { detached_at: nil, deleted_at: nil })
+                                      .pluck("project_mission_attachments.mission_id")
+                                      .uniq
+      Mission.available
+             .where.not(id: taken_mission_ids)
+             .includes(:icon_attachment, :prerequisites)
+             .order(featured_at: :desc)
+             .to_a
+             .select { |m| m.prerequisites_met_by?(current_user) }
+             .first(12)
+    else
+      []
+    end
 
     @show_project_tour = params[:welcome] == "1" && current_user.present? && @is_member &&
                          current_user.projects.count == 1 && !session[:project_tour_seen]
@@ -136,7 +164,9 @@ class ProjectsController < ApplicationController
       if is_owner &&
           latest_ship_event.present? &&
           latest_ship_event.certification_status == "approved" &&
-          latest_ship_event.payout.blank?
+          latest_ship_event.payout.blank? &&
+          latest_ship_event.mission_submission&.payout_path != "static_prize" &&
+          !latest_ship_event.mission_submission&.rejected?
 
         required = Post::ShipEvent::VOTES_REQUIRED_FOR_PAYOUT
         current = latest_ship_event.votes.payout_countable.count
@@ -151,6 +181,21 @@ class ProjectsController < ApplicationController
     end
   end
   private :prepare_project_show_context
+
+  # Decided Shipwright reviews, shown only to project members (and admins)
+  # while the release flag is on.
+  def visible_ship_decisions
+    return [] unless current_user
+    return [] unless @is_member || current_user.admin?
+    return [] unless Flipper.enabled?(:week_1_release, current_user)
+
+    @project.ship_reviews
+            .where.not(status: :pending)
+            .includes(:reviewer)
+            .with_attached_verdict_video
+            .to_a
+  end
+  private :visible_ship_decisions
 
   def add_test_time
     authorize @project
@@ -190,9 +235,11 @@ class ProjectsController < ApplicationController
     authorize @project
     @missions = Mission.available
                        .where.not(id: missions_user_already_has_a_project_on)
-                       .includes(:icon_attachment, :banner_attachment)
+                       .includes(:icon_attachment, :banner_attachment, :prerequisites)
                        .order(featured_at: :desc)
-                       .limit(8)
+                       .to_a
+                       .select { |m| m.prerequisites_met_by?(current_user) }
+                       .first(8)
   end
 
   def missions_user_already_has_a_project_on
@@ -231,7 +278,7 @@ class ProjectsController < ApplicationController
 
       project_hours = @project.total_hackatime_hours
 
-      if (slug = params[:mission_slug].presence) && (mission = Mission.find_by(slug: slug))
+      if (slug = params[:mission_slug].presence) && (mission = Mission.find_by(slug: slug)) && mission.prerequisites_met_by?(current_user)
         @project.missions << mission
         attrs = {}
         if @project.title.blank? || @project.title == "Untitled"
@@ -340,7 +387,7 @@ class ProjectsController < ApplicationController
     follow = current_user.project_follows.build(project: @project)
     if follow.save
       @project.users.includes(:preference).each do |member|
-        if member.preference.send_notifications_for_new_followers && current_user.slack_id && member.slack_id
+        if member.preference&.send_notifications_for_new_followers && current_user.slack_id && member.slack_id
           SendSlackDmJob.perform_later(
             member.slack_id,
             "#{current_user.display_name} is now following your project #{@project.title}!",
@@ -369,6 +416,13 @@ class ProjectsController < ApplicationController
     else
       redirect_to project_path(@project), alert: "Could not unfollow."
     end
+  end
+
+  def followers
+    @project = Project.find(params[:id])
+    authorize @project, :show?
+    @followers = @project.followers.where(banned: false).order(:display_name)
+    render "users/followers", layout: false
   end
 
   def readme
@@ -410,7 +464,7 @@ class ProjectsController < ApplicationController
   end
 
   def project_params
-    params.require(:project).permit(:title, :description, :demo_url, :repo_url, :readme_url, :banner, :ai_declaration, :update_description, hackatime_project_ids: [])
+    params.require(:project).permit(:title, :description, :demo_url, :repo_url, :readme_url, :banner, :ai_declaration, :update_description, :hardware_stage, hackatime_project_ids: [])
   end
 
   def hackatime_project_ids
@@ -435,42 +489,18 @@ class ProjectsController < ApplicationController
     validate_url_not_dead(:readme_url, "Readme URL") if @project.readme_url.present? && @project.errors.empty?
   end
 
-  # these links block automated requests, but we're ok with just assuming they're good
-  ALLOWLISTED_DOMAINS = %w[
-    npmjs.com
-    crates.io
-    curseforge.com
-    makerworld.com
-    streamlit.app
-  ].freeze
-
   def validate_url_not_dead(attribute, name)
     require "uri"
-    require "faraday"
-    require "faraday/follow_redirects"
 
     return unless @project.send(attribute).present?
 
     uri = URI.parse(@project.send(attribute))
 
-    if ALLOWLISTED_DOMAINS.any? { |domain| uri.host&.end_with?(domain) }
-      return
-    end
+    status = @project.url_probe_status(@project.send(attribute), cache: false)
+    return if status.nil?
 
-    conn = Faraday.new(
-      url: uri.to_s,
-      headers: { "User-Agent" => "Stardance project validator (https://stardance.hackclub.com/)" }
-    ) do |faraday|
-      faraday.response :follow_redirects, max_redirects: 3
-      faraday.adapter Faraday.default_adapter
-    end
-    response = conn.get() do |req|
-      req.options.timeout = 5
-      req.options.open_timeout = 5
-    end
-
-    unless (200..299).cover?(response.status)
-      @project.errors.add(attribute, "Your #{name} needs to return a 200 status. I got #{response.status}, is your code/website set to public!?!?")
+    unless (200..299).cover?(status)
+      @project.errors.add(attribute, "Your #{name} needs to return a 200 status. I got #{status}, is your code/website set to public!?!?")
     end
 
 
@@ -516,12 +546,19 @@ class ProjectsController < ApplicationController
 
   rescue URI::InvalidURIError
     @project.errors.add(attribute, "#{name} is not a valid URL")
-  rescue Faraday::ConnectionFailed => e
-    @project.errors.add(attribute, "Please make sure the URL is valid and reachable: #{e.message}")
+  rescue SafeUrl::Error => e
+    # Host failed SSRF verification (non-public IP, unresolvable, bad scheme).
+    # Keep the real reason in the logs; give the user a cheeky generic message
+    # so we don't confirm whether an internal host exists.
+    Rails.logger.warn("URL validation rejected #{attribute}: #{e.message}")
+    @project.errors.add(attribute, "nice try ding dong — #{name} has to be a real, public URL")
+  rescue SocketError, Errno::ECONNREFUSED, Errno::EHOSTUNREACH, Net::OpenTimeout, Net::ReadTimeout, OpenSSL::SSL::SSLError => e
+    Rails.logger.warn("URL validation failed for #{attribute}: #{e.class}: #{e.message}")
+    @project.errors.add(attribute, "#{name} could not be reached. Please make sure the URL is valid and publicly accessible.")
   rescue StandardError => e
-    @project.errors.add(attribute, "#{name} could not be verified (idk why, pls let a admin know if this is happening a lot and your sure that the URL is valid): #{e.message}")
+    Rails.logger.warn("URL validation error for #{attribute}: #{e.class}: #{e.message}")
+    @project.errors.add(attribute, "#{name} could not be verified. Please try again or contact support if the issue persists.")
   end
-
   def link_hackatime_projects
     # Unlink hackatime projects that were removed
     @project.hackatime_projects.where.not(id: hackatime_project_ids).find_each do |hp|

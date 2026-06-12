@@ -8,15 +8,21 @@ export default class extends Controller {
     url: String,
     debounce: { type: Number, default: 350 },
     max: { type: Number, default: 30 },
+    checkOnConnect: { type: Boolean, default: false },
   };
 
   connect() {
     this.lastQuery = null;
     this.abortController = null;
     this.timer = null;
-    this._initialValue = this.inputTarget.value;
+    this._initialValue = this.checkOnConnectValue
+      ? null
+      : this.inputTarget.value;
     this._setSubmitDisabled(true);
     this._updateCounter();
+    if (this.checkOnConnectValue && this.inputTarget.value.trim() !== "") {
+      this.check();
+    }
   }
 
   disconnect() {

@@ -22,9 +22,13 @@ class Projects::ShipsController < ApplicationController
 
     @project.with_lock do
       @project.submit_for_review!
-      ship_event = Post::ShipEvent.create!(
-        body: params[:ship_update].to_s.strip
-      )
+      ship_event = Post::ShipEvent.new(body: params[:ship_update].to_s.strip)
+      ship_event.uploading_attachments = params.dig(:ship_event, :attachments).present?
+      ship_event.save!
+      if ship_event.uploading_attachments
+        ship_event.attachments.attach(params[:ship_event][:attachments])
+        raise ActiveRecord::RecordInvalid, ship_event unless ship_event.valid?
+      end
       @post = @project.posts.create!(user: current_user, postable: ship_event)
       maybe_create_mission_submission(ship_event, mission_payout_path, submission_guide_ack)
 
@@ -91,6 +95,9 @@ class Projects::ShipsController < ApplicationController
     end
 
     def resolve_payout_path(mission, payout_path_param)
+      if mission.fixed_stardust_payout&.positive? && !current_user.completed_mission_ids.include?(mission.id)
+        return "static_prize"
+      end
       return "voting" unless mission.has_prizes?
       return "voting" if user_redeemed_prize_for?(mission)
       payout_path_param.to_s == "voting" ? "voting" : "static_prize"

@@ -7,6 +7,7 @@
   ship_text   = ship.body.to_s
   total_hours = (project.duration_seconds / 3600.0).round
   ship_number      = local_assigns[:ship_number]
+  recert_modal_id  = local_assigns[:recert_modal_id]
   pending_review   = ship.certification_status == "pending"
   engagement_data = {
     controller: "feed-engagement",
@@ -27,6 +28,17 @@
     <span><%= ship_number ? "Ship ##{ship_number}" : "Ship" %></span>
     <% if pending_review %>
       <span class="project-show__latest-ship-status project-show__latest-ship-status--pending">Pending review</span>
+    <% elsif ship.certification_status == "returned" %>
+      <% if recert_modal_id %>
+        <button type="button"
+                class="project-show__latest-ship-status project-show__latest-ship-status--returned project-show__latest-ship-status--clickable"
+                onclick="document.getElementById(<%= recert_modal_id.to_json %>).showModal()"
+                aria-haspopup="dialog">
+          Changes requested ↗
+        </button>
+      <% else %>
+        <span class="project-show__latest-ship-status project-show__latest-ship-status--returned">Changes requested</span>
+      <% end %>
     <% end %>
   </div>
 
@@ -48,7 +60,7 @@
         <span class="feed-post-card__context">on</span>
         <%= link_to project.title, project_path(project), class: "feed-post-card__project", data: { turbo_frame: "_top" } %>
         <time class="feed-post-card__time" datetime="<%= post.created_at.iso8601 %>" title="<%= l(post.created_at, format: :long) %>">
-          · <%= time_ago_in_words(post.created_at) %>
+          · <%= time_ago_in_words(post.created_at) %> ago
         </time>
       </p>
 
@@ -59,6 +71,8 @@
       <% end %>
     </div>
   </header>
+
+  <%= render "shared/post_media", attachments: ship.attachments %>
 
   <ul class="feed-post-card__body project-show__latest-ship-stats" aria-label="Project totals">
     <li class="profile-project-card__meta-item">
@@ -86,7 +100,7 @@
   <% if project.demo_url.present? || project.repo_url.present? %>
     <div class="feed-post-card__body project-show__latest-ship-cta">
       <% if project.demo_url.present? %>
-        <%= link_to "Try project →",
+        <%= link_to project.hardware? ? "Video of Project →" : "Try project →",
                     project.demo_url,
                     target: "_blank",
                     rel: "noopener",

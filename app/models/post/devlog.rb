@@ -10,6 +10,7 @@
 #  hackatime_projects_key_snapshot :text
 #  hackatime_pulled_at             :datetime
 #  likes_count                     :integer          default(0), not null
+#  phase                           :string
 #  synced_at                       :datetime
 #  tutorial                        :boolean          default(FALSE), not null
 #  created_at                      :datetime         not null
@@ -29,18 +30,16 @@ class Post::Devlog < ApplicationRecord
   # Ignore devlog_review_id column before removing it in migration
   self.ignored_columns += [ "devlog_review_id" ]
 
+  # Which hardware stage this devlog was logged in. Stamped from the project's
+  # hardware_stage at creation (nil for software). Only build-phase time feeds
+  # the ship payout basis — see Post::ShipEvent#hours.
+  PHASES = %w[design build].freeze
+
+  scope :design_phase, -> { where(phase: "design") }
+  scope :build_phase, -> { where(phase: "build") }
+
   BODY_MAX_LENGTH = 4_000
   MAX_ATTACHMENTS = 4
-
-  # flag for tracking if attachments are being uploaded during an update
-  attr_accessor :uploading_attachments
-
-  # Version history
-  has_many :versions, class_name: "DevlogVersion", foreign_key: :devlog_id, dependent: :destroy
-
-  # Review association
-  has_one :devlog_review, class_name: "Certification::Devlog", foreign_key: :post_devlog_id, dependent: :destroy
-
   ACCEPTED_CONTENT_TYPES = %w[
     image/jpeg
     image/png
@@ -54,8 +53,18 @@ class Post::Devlog < ApplicationRecord
     video/x-matroska
   ].freeze
 
+  include HasPostAttachments
+
+  # Version history
+  has_many :versions, class_name: "DevlogVersion", foreign_key: :devlog_id, dependent: :destroy
+
+  # Review association
+  has_one :devlog_review, class_name: "Certification::Devlog", foreign_key: :post_devlog_id, dependent: :destroy
+
   has_many :likes, as: :likeable, dependent: :destroy
   has_many :comments, as: :commentable, dependent: :destroy
+
+  has_many :lookout_sessions, foreign_key: :devlog_id
 
   # only for images – not for videos or gif!
   has_many_attached :attachments do |attachable|
@@ -122,18 +131,6 @@ class Post::Devlog < ApplicationRecord
   end
 
   private
-
-  def at_least_one_attachment
-    return if uploading_attachments
-
-    errors.add(:attachments, "must include at least one image or video") unless attachments.attached?
-  end
-
-  def at_most_max_attachments
-    if attachments.size > MAX_ATTACHMENTS
-      errors.add(:attachments, "can't exceed #{MAX_ATTACHMENTS} files")
-    end
-  end
 
   def handle_post_creation
     PostCreationToSlackJob.perform_later(self)
