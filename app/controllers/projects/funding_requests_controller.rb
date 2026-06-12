@@ -7,21 +7,6 @@ class Projects::FundingRequestsController < ApplicationController
   def create
     authorize @project, :ship?
 
-    unless @project.design_stage?
-      return redirect_to project_path(@project),
-                         alert: "Only projects in the funding stage can request funding."
-    end
-
-    unless @project.devlog_posts.exists?
-      return redirect_to project_path(@project),
-                         alert: "You need to post at least one devlog before requesting funding."
-    end
-
-    if @project.has_pending_funding_request?
-      return redirect_to project_path(@project),
-                         alert: "You already have a funding request under review."
-    end
-
     @project.certification_funding_requests.create!(
       user: current_user,
       complexity_tier: params[:complexity_tier].to_i,

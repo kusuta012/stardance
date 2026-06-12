@@ -85,6 +85,9 @@ module Certification
     validates :feedback, length: { maximum: 10_000 }, allow_blank: true
     validate :requested_within_tier_max
     validate :approved_within_tier_max
+    validate :project_in_design_stage, on: :create
+    validate :project_has_devlogs, on: :create
+    validate :no_pending_request_exists, on: :create
 
     scope :for_reviewer, ->(user) {
       joins(:project)
@@ -186,6 +189,18 @@ module Certification
     after_save_commit :notify_owner!, if: -> { saved_change_to_status? && !pending? }
 
     private
+
+    def project_in_design_stage
+      errors.add(:base, "Only projects in the funding stage can request funding.") unless project&.design_stage?
+    end
+
+    def project_has_devlogs
+      errors.add(:base, "You need to post at least one devlog before requesting funding.") unless project&.devlog_posts&.exists?
+    end
+
+    def no_pending_request_exists
+      errors.add(:base, "You already have a funding request under review.") if project&.has_pending_funding_request?
+    end
 
     def requested_within_tier_max
       return if complexity_tier.blank? || requested_amount_cents.blank?

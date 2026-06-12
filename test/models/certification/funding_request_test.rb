@@ -40,6 +40,7 @@ require "test_helper"
 
 class Certification::FundingRequestTest < ActiveSupport::TestCase
   def setup
+    Flipper.enable(:hardware_flow)
     @owner = User.create!(
       email: "owner-#{SecureRandom.hex(6)}@example.com",
       display_name: "Owner#{SecureRandom.hex(3)}",
@@ -52,6 +53,10 @@ class Certification::FundingRequestTest < ActiveSupport::TestCase
     )
     @project = Project.create!(title: "HW #{SecureRandom.hex(4)}", hardware_stage: "design")
     Project::Membership.create!(project: @project, user: @owner, role: :owner)
+    devlog = Post::Devlog.new(body: "initial log", duration_seconds: 3600, phase: "design")
+    devlog.uploading_attachments = true
+    devlog.save!
+    Post.create!(project: @project, user: @owner, postable: devlog)
   end
 
   test "rejects a requested amount above the tier maximum" do
